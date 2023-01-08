@@ -2,3 +2,4 @@
 *.log
 .env
 dev/
+__pycache__
