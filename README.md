@@ -14,6 +14,19 @@
  
  - [Maiachess](https://maiachess.com/)
 
+ - [Slow Chess Blitz by Jonathan Kreuzer ](https://3dkingdoms.com/chess/)
+
+ - [rofChade](https://rofchade.nl/)
+
+ - [Mimic](https://github.com/tryingsomestuff/Minic)
+
+ - [igel](https://github.com/vshcherbyna/igel)
+
+ - [marvin chess](https://github.com/bmdanielsson/marvin-chess)
+
+ - [Halogen](https://github.com/bmdanielsson/marvin-chess)
+
+ - [Koivisto](https://github.com/Luecx/Koivisto)
 <h4>Docs</h4>
 
  - [python-chess](https://python-chess.readthedocs.io/en/latest/)
@@ -23,4 +36,24 @@
  - [chrome extension exemple](https://github.com/GoogleChrome/chrome-extensions-samples/tree/main/examples)
  
  - [chrome extension fix](https://stackoverflow.com/questions/14361061/extension-manifest-must-request-permission-to-access-this-host)
+
+ - [PyAutoGUI](https://pyautogui.readthedocs.io/en/latest/)
+
+ - [mss](https://python-mss.readthedocs.io/)
+
+ - [AI datasets](https://public.roboflow.com/object-detection/chess-full/23/download/yolov7pytorch)
+
+ - [BeyondWiki](https://wiki.bc-pf.org/books/neyronnye-seti/page/chast2-perevod-freymvork-darknet-obuchenie-yolo-v4)
+
+<h3>Exemple</h3>
+
+https://snyk.io/advisor/python/stockfish/example
+
+https://snyk.io/advisor/python/komodo
+
+https://www.sicara.fr/blog-technique/object-detection-template-matching
+
+https://pypi.org/project/stockfish/
+
+https://pyautogui.readthedocs.io/en/latest/mouse.html#mouse-clicks
 

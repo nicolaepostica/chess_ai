@@ -5,14 +5,23 @@ name = "pypi"
 
 [packages]
 chess = "==1.9.4"
-numpy = "==1.24.1"
+numpy = "*"
 fastapi = "==0.88.0"
-loguru= "==0.6.0"
+loguru = "==0.6.0"
+opencv-python = "==4.7.0.68"
+mss = "==7.0.1"
+PyAutoGUI = "==0.9.53"
+stockfish = "==3.28.0"
+websockets = "*"
+uvicorn = "*"
+flask = "2.2.2"
+flask-cors = "*"
 
 [dev-packages]
 
 [requires]
-python_version = "3.11"
+python_version = "3.10"
 
 [scripts]
 main='python main.py'
+server='python server.py'
