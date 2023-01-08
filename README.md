@@ -24,7 +24,7 @@
 
 <h4>Engine:</h4>
 
- - [Stockfishchess <<<](https://stockfishchess.org/)
+ - [Stockfishchess](https://stockfishchess.org/) <<<
  
  - [Komodochess](https://komodochess.com/)
  
