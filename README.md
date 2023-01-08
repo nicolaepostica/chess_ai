@@ -1,10 +1,26 @@
 <h1>Chess AI</h1>
 
+<h4>Install</h4>
+
+- install chome extension from extensions/chrome
+
+- pipenv install
+
+<h4>Run</h4>
+
+- pipenv run main
+
+- start chess game and click to extension icon 
+
+<h4>Troubleshooting:</h4>
+
+ - sometimes freezes -> need reload browser tab and click to extension icon
+
 <h4>Extensions:</h4>
 
  - chrome
  
- - firefox
+ - firefox comming soon
 
 <h4>Engine:</h4>
 

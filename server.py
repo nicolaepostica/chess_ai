@@ -37,12 +37,11 @@ app.add_middleware(
 file_path = os.path.dirname(os.path.realpath(__file__))
 stockfish_engine_path = os.path.join(file_path, "engine/Stockfish_15.1/stockfish-ubuntu-20.04-x86-64")
 app.stockfish = Stockfish(path=stockfish_engine_path)
-# app.stockfish = 'Stockfish(path=stockfish_engine_path)'
 
 
 @app.get("/reset")
 async def reset():
-    app.stockfish = Stockfish(path=stockfish_engine_path)
+    app.stockfish.set_fen_position("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
     return {'status': status.HTTP_200_OK}
 
 
@@ -65,6 +64,7 @@ async def get():
 
     return {'status': status.HTTP_200_OK}
 
+
 def best_move(inversed_board):
     best_move = app.stockfish.get_best_move(wtime=1000, btime=1000)
     print('AI move:', best_move)
@@ -80,6 +80,7 @@ def best_move(inversed_board):
     # sleep(0.2)
     x, y = board[move_to]
     pyautogui.click(x, y)
+
 
 @app.get("/first_move")
 async def first_move():

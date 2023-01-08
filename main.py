@@ -19,6 +19,7 @@ CORS(app)
 file_path = os.path.dirname(os.path.realpath(__file__))
 stockfish_engine_path = os.path.join(file_path, "engine/Stockfish_15.1/stockfish-ubuntu-20.04-x86-64")
 app.stockfish = Stockfish(path=stockfish_engine_path)
+app.histoory = []
 
 html = """
 <!DOCTYPE html>
@@ -47,7 +48,9 @@ def best_move(inversed_board):
     move_to = current_best_move[2:4]
     x, y = current_board[move_from]
     pyautogui.click(x, y)
+    sleep(random.choice([1, 2]))
     x, y = current_board[move_to]
+    app.histoory.append(current_best_move)
     pyautogui.click(x, y)
 
 
@@ -73,21 +76,23 @@ def first_move():
 
 @app.route("/move", methods=['POST'])
 def move():
-    print("---" * 30)
     data = request.json
     move_to = f'{data["move_from"]}{data["move_to"]}'
-    print("Move to:", move_to)
-    app.stockfish.make_moves_from_current_position([move_to])
-    # print(app.stockfish.get_board_visual())
-    print('Take AI move')
-    best_move(data["inversed_board"])
-    print(app.stockfish.get_board_visual())
+    if move_to not in app.histoory[-2:]:
+        app.histoory.append(move_to)
+        print("---" * 30)
+        print("Move to:", move_to)
+        app.stockfish.make_moves_from_current_position([move_to])
+        print('Take AI move')
+        best_move(data["inversed_board"])
+        print(app.stockfish.get_board_visual())
     return {'status': 'ok'}
 
 
-@app.route("/reset",  methods=['GET', 'POST'])
+@app.route("/reset", methods=['GET', 'POST'])
 def reset():
-    app.stockfish = Stockfish(path=stockfish_engine_path)
+    app.stockfish.set_fen_position("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+    app.histoory = []
     if request.method == "POST":
         return {'status': 'ok'}
     else:
