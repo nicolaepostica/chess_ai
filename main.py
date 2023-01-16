@@ -11,6 +11,7 @@ import random
 from constants import BOARD, INVERSED_BOARD
 
 LOGGING_LEVEL = os.getenv('LOGGING_LEVEL', 'INFO')
+SKII_LEVEL = int(os.getenv('SKII_LEVEL', 20))
 
 logger.add('logs/ai.log', format="{time} {level} {message}", level=LOGGING_LEVEL, rotation='2 MB', compression='tar.gz')
 
@@ -19,6 +20,7 @@ CORS(app)
 file_path = os.path.dirname(os.path.realpath(__file__))
 stockfish_engine_path = os.path.join(file_path, "engine/Stockfish_15.1/stockfish-ubuntu-20.04-x86-64")
 app.stockfish = Stockfish(path=stockfish_engine_path)
+app.stockfish.update_engine_parameters({"Skill Level": SKII_LEVEL})
 app.histoory = []
 
 html = """
@@ -37,7 +39,7 @@ html = """
 
 
 def best_move(inversed_board):
-    current_best_move = app.stockfish.get_best_move(wtime=1000, btime=1000)
+    current_best_move = app.stockfish.get_best_move(wtime=2000, btime=2000)
     print('AI move:', current_best_move)
     app.stockfish.make_moves_from_current_position([current_best_move])
 
@@ -48,7 +50,7 @@ def best_move(inversed_board):
     move_to = current_best_move[2:4]
     x, y = current_board[move_from]
     pyautogui.click(x, y)
-    sleep(random.choice([1, 2]))
+    sleep(random.choice([2, 3, 4, 5]))
     x, y = current_board[move_to]
     app.histoory.append(current_best_move)
     pyautogui.click(x, y)
@@ -62,8 +64,8 @@ def board():
 
 @app.route('/best_move', methods=['GET', 'POST'])
 def take_best_move():
-    move = app.stockfish.get_best_move(wtime=1000, btime=1000)
-    app.stockfish.make_moves_from_current_position([move])
+    current_best_move = app.stockfish.get_best_move(wtime=1000, btime=1000)
+    app.stockfish.make_moves_from_current_position([current_best_move])
     response = html % app.stockfish.get_board_visual()
     return response
 
