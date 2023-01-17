@@ -1,5 +1,11 @@
 <h1>Chess AI</h1>
 
+<h4>Requirements</h4>
+
+ - display - 1920x1080
+
+ - os - Linux
+
 <h4>Install</h4>
 
 - install chome extension from extensions/chrome
