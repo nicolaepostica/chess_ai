@@ -61,7 +61,7 @@ function init() {
                         const data = {
                             move_from: num_to_char[from[0]] + from[1],
                             move_to: num_to_char[to[0]] + to[1],
-                            inversed_board: watch == 'w'
+                            flipped_board: watch == 'w'
                         };
                         fetch('http://localhost:5000/move', {
                             method: 'POST', // or 'PUT'
