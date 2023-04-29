@@ -54,7 +54,7 @@ def best_move(flipped_board):
     move_to = current_best_move[2:4]
     x, y = current_board[move_from]
     pyautogui.click(x, y)
-    sleep(random.choice([2, 3, 4, 5]))
+    sleep(random.choice([3, 3, 4, 5, 6, 7]))
     x, y = current_board[move_to]
     app.history.append(current_best_move)
     pyautogui.click(x, y)
