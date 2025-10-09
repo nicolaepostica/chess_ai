@@ -25,8 +25,6 @@
 <h4>Extensions:</h4>
 
  - chrome
- 
- - firefox comming soon
 
 <h4>Engine:</h4>
 
