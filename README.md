@@ -3,18 +3,18 @@
 <h4>Requirements</h4>
 
  - display - 1920x1080
-
  - os - Linux
+ - [Download Engine](https://stockfishchess.org/download/)
 
 <h4>Install</h4>
 
-- install chome extension from extensions/chrome
+- install chrome extension from extensions/chrome
 
-- pipenv install
+- uv sync
 
 <h4>Run</h4>
 
-- pipenv run main
+- uv run main.py
 
 - start chess game and click to extension icon 
 
@@ -25,8 +25,6 @@
 <h4>Extensions:</h4>
 
  - chrome
- 
- - firefox comming soon
 
 <h4>Engine:</h4>
 

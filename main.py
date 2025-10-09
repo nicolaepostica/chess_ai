@@ -2,24 +2,33 @@
 import os
 from time import sleep
 
+import logging
+from dotenv import load_dotenv
 import pyautogui
 from flask import Flask, request
 from flask_cors import CORS
-from loguru import logger
 from stockfish import Stockfish
 import random
 from constants import BOARD, FLIPPED_BOARD
+from engine import v17_engine_path
+
+load_dotenv()
 
 LOGGING_LEVEL = os.getenv('LOGGING_LEVEL', 'INFO')
 SKILL_LEVEL = int(os.getenv('SKILL_LEVEL', 20))
 ELO = int(os.getenv('ELO', 1350))
 
-logger.add('logs/ai.log', format="{time} {level} {message}", level=LOGGING_LEVEL, rotation='2 MB', compression='tar.gz')
+logging.basicConfig(
+    level=getattr(logging, LOGGING_LEVEL),
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 CORS(app)
 file_path = os.path.dirname(os.path.realpath(__file__))
-stockfish_engine_path = os.path.join(file_path, "engine/Stockfish_15.1/stockfish-ubuntu-20.04-x86-64")
+stockfish_engine_path = os.path.join(file_path, v17_engine_path)
 app.stockfish = Stockfish(path=stockfish_engine_path)
 # app.stockfish.update_engine_parameters({"Skill Level": SKILL_LEVEL})
 # app.stockfish.set_skill_level(SKILL_LEVEL)
@@ -54,7 +63,7 @@ def best_move(flipped_board):
     move_to = current_best_move[2:4]
     x, y = current_board[move_from]
     pyautogui.click(x, y)
-    sleep(random.choice([3, 3, 4, 5, 6, 7]))
+    sleep(random.randrange(2, 5))
     x, y = current_board[move_to]
     app.history.append(current_best_move)
     pyautogui.click(x, y)

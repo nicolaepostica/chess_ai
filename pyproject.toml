@@ -1,0 +1,20 @@
+[project]
+name = "chess-ai"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "flask>=3.1.2",
+    "flask-cors>=6.0.1",
+    "gunicorn>=23.0.0",
+    "pyautogui>=0.9.54",
+    "python-dotenv>=1.1.1",
+    "stockfish>=3.28.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
+    "ruff>=0.14.0",
+]
