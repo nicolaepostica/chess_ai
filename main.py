@@ -10,13 +10,13 @@ from flask_cors import CORS
 from stockfish import Stockfish
 import random
 from constants import BOARD, FLIPPED_BOARD
-from engine import v17_engine_path
 
 load_dotenv()
 
 LOGGING_LEVEL = os.getenv('LOGGING_LEVEL', 'INFO')
 SKILL_LEVEL = int(os.getenv('SKILL_LEVEL', 20))
 ELO = int(os.getenv('ELO', 1350))
+ENGINE_PATH = os.getenv('ENGINE_PATH', False)
 
 logging.basicConfig(
     level=getattr(logging, LOGGING_LEVEL),
@@ -28,8 +28,10 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app)
 file_path = os.path.dirname(os.path.realpath(__file__))
-stockfish_engine_path = os.path.join(file_path, v17_engine_path)
-app.stockfish = Stockfish(path=stockfish_engine_path)
+if not ENGINE_PATH:
+    logger.error('Missing .env')
+    exit(1)
+app.stockfish = Stockfish(path=ENGINE_PATH)
 # app.stockfish.update_engine_parameters({"Skill Level": SKILL_LEVEL})
 # app.stockfish.set_skill_level(SKILL_LEVEL)
 # app.stockfish.set_elo_rating(ELO)

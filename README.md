@@ -12,6 +12,16 @@
 
 - uv sync
 
+```dotenv
+LOGGING_LEVEL=INFO
+HOST=0.0.0.0
+PORT=5000
+RELOAD=1
+SKII_LEVEL=20
+ELO=1350
+ENGINE_PATH='full_path_to/stockfish-ubuntu-x86-64*'
+```
+
 <h4>Run</h4>
 
 - uv run main.py
