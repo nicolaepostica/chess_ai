@@ -8,7 +8,7 @@
 
 <h4>Install</h4>
 
-- install chrome extension from extensions/chrome
+- install chrome extension from [extensions](chrome://extensions/)
 
 - uv sync
 
