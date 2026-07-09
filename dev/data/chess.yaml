@@ -1,0 +1,9 @@
+# train and val data as 1) directory: path/images/, 2) file: path/images.txt, or 3) list: [path1/images/, path2/images/]
+train: ./data/train # train images
+val: ./data/val # validate images
+
+# number of classes
+nc: 30
+
+# class names
+names: ['dog', 'person', 'cat', 'tv', 'car', 'meatballs', 'marinara sauce', 'tomato soup', 'chicken noodle soup', 'french onion soup', 'chicken breast', 'ribs', 'pulled pork', 'hamburger', 'cavity','table', 'wp', 'wr', 'wh', 'wb', 'wq', 'wk', 'bp', 'br', 'bh', 'bb', 'bq', 'bk', 'from', 'to']
