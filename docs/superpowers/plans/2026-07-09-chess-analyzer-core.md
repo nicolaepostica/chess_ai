@@ -25,23 +25,23 @@
 ### Task 1: Скаффолд проекта и удаление старого кода
 
 **Files:**
-- Delete (tracked): `main.py`, `engine.py`, `constants.py`, `pyproject.toml`, `uv.lock`, `.python-version`, `extensions/`
-- Delete (untracked leftovers): `dev/`, `.DS_Store`
-- Create: `package.json`, `vite.config.ts`, `tsconfig.json`, `index.html`, `src/main.tsx`, `src/App.tsx`, `.gitignore`
+- Create: `package.json`, `vite.config.ts`, `tsconfig.json`, `index.html`, `src/main.tsx`, `src/App.tsx`
+- Modify: `.gitignore`
 - Create: `scripts/copy-stockfish.js`
 
 **Interfaces:**
 - Consumes: ничего.
 - Produces: работающий `npm run dev` и `npm test`; файлы движка в `public/stockfish/`.
 
-- [ ] **Step 1: Удалить питоновский бот**
+- [ ] **Step 1: Убедиться, что репозиторий чист**
 
-`dev/` и `.DS_Store` в индексе git отсутствуют, поэтому удаляются обычным `rm`, а не `git rm`.
+Старый питоновский бот уже удалён из `main` (коммит «Remove chess.com bot») и
+сохранён в ветке `legacy-chessdotcom-bot`. Отдельного шага удаления не требуется
+— только проверка исходного состояния.
 
-```bash
-git rm -r --quiet main.py engine.py constants.py pyproject.toml uv.lock .python-version extensions
-rm -rf dev .DS_Store
-```
+Run: `git ls-files`
+Expected: ровно четыре записи — `.gitignore`, `LICENSE`, `README.md` и два файла
+под `docs/`. Если видите `main.py` или `extensions/`, вы не на `main`.
 
 - [ ] **Step 2: Создать `package.json`**
 
@@ -202,7 +202,9 @@ export function App() {
 }
 ```
 
-- [ ] **Step 7: Создать `.gitignore`**
+- [ ] **Step 7: Заменить `.gitignore`**
+
+Существующий файл описывает питоновский проект. Заменить его содержимое целиком:
 
 ```gitignore
 node_modules/
@@ -210,6 +212,9 @@ dist/
 public/stockfish/
 .DS_Store
 ```
+
+`public/stockfish/` не коммитим: 14 МБ бинарников, которые `npm run dev`
+копирует из `node_modules` сам.
 
 - [ ] **Step 8: Установить зависимости и проверить изоляцию**
 

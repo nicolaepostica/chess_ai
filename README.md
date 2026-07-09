@@ -1,89 +1,19 @@
-<h1>Chess AI</h1>
+# Chess Analyzer
 
-<h4>Requirements</h4>
+Локальный шахматный анализатор: Stockfish 18 в браузере через WASM, без бэкенда.
 
- - display - 1920x1080
- - os - Linux
- - [Download Engine](https://stockfishchess.org/download/)
+Проект в стадии реализации. Код появится по ходу выполнения плана.
 
-<h4>Install</h4>
+- Дизайн: [`docs/superpowers/specs/2026-07-09-chess-analyzer-design.md`](docs/superpowers/specs/2026-07-09-chess-analyzer-design.md)
+- План реализации: [`docs/superpowers/plans/2026-07-09-chess-analyzer-core.md`](docs/superpowers/plans/2026-07-09-chess-analyzer-core.md)
 
-- install chrome extension
+## История
 
-- uv sync
+До версии 0.1 в этом репозитории жил бот, который играл на chess.com, кликая
+мышью через `pyautogui`. Он сохранён в ветке `legacy-chessdotcom-bot` вместе с
+размеченным датасетом для распознавания доски. Текущий проект — не автоматизация
+чужих сайтов, а анализатор позиции, которую вы ему дали.
 
-```dotenv
-LOGGING_LEVEL=INFO
-HOST=0.0.0.0
-PORT=5000
-RELOAD=1
-SKII_LEVEL=20
-ELO=1350
-ENGINE_PATH='full_path_to/stockfish-ubuntu-x86-64*'
-```
+## Лицензия
 
-<h4>Run</h4>
-
-- uv run main.py
-
-- start chess game and click to extension icon 
-
-<h4>Troubleshooting:</h4>
-
- - sometimes freezes -> need reload browser tab and click to extension icon
-
-<h4>Extensions:</h4>
-
- - chrome
-
-<h4>Engine:</h4>
-
- - [Stockfishchess](https://stockfishchess.org/) <<<
- 
- - [Komodochess](https://komodochess.com/)
- 
- - [Maiachess](https://maiachess.com/)
-
- - [Slow Chess Blitz by Jonathan Kreuzer ](https://3dkingdoms.com/chess/)
-
- - [rofChade](https://rofchade.nl/)
-
- - [Mimic](https://github.com/tryingsomestuff/Minic)
-
- - [igel](https://github.com/vshcherbyna/igel)
-
- - [marvin chess](https://github.com/bmdanielsson/marvin-chess)
-
- - [Halogen](https://github.com/bmdanielsson/marvin-chess)
-
- - [Koivisto](https://github.com/Luecx/Koivisto)
-<h4>Docs</h4>
-
- - [python-chess](https://python-chess.readthedocs.io/en/latest/)
- 
- - [FastAPI](https://fastapi.tiangolo.com/)
- 
- - [chrome extension exemple](https://github.com/GoogleChrome/chrome-extensions-samples/tree/main/examples)
- 
- - [chrome extension fix](https://stackoverflow.com/questions/14361061/extension-manifest-must-request-permission-to-access-this-host)
-
- - [PyAutoGUI](https://pyautogui.readthedocs.io/en/latest/)
-
- - [mss](https://python-mss.readthedocs.io/)
-
- - [AI datasets](https://public.roboflow.com/object-detection/chess-full/23/download/yolov7pytorch)
-
- - [BeyondWiki](https://wiki.bc-pf.org/books/neyronnye-seti/page/chast2-perevod-freymvork-darknet-obuchenie-yolo-v4)
-
-<h3>Exemple</h3>
-
-https://snyk.io/advisor/python/stockfish/example
-
-https://snyk.io/advisor/python/komodo
-
-https://www.sicara.fr/blog-technique/object-detection-template-matching
-
-https://pypi.org/project/stockfish/
-
-https://pyautogui.readthedocs.io/en/latest/mouse.html#mouse-clicks
-
+GPL-3.0 — требование Stockfish.
