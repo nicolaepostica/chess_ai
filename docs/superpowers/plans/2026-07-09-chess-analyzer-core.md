@@ -19,8 +19,10 @@
 - Лицензия проекта — GPL-3.0 (требование Stockfish). Не добавлять зависимости с несовместимыми лицензиями.
 - `engine/` не импортирует React. `game/` не импортирует ни `engine/`, ни React. Нарушение этих границ — повод отклонить задачу на ревью.
 - Тестовая позиция «мат в один» используется во всём плане: FEN `6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1`, правильный ход `a1a8`, оценка `{ type: 'mate', value: 1 }`.
-- Каждая задача заканчивается коммитом.
-- Работаем в ветке `main`. Старый бот сохранён в `legacy-chessdotcom-bot`, из него ничего не переиспользуется.
+- Каждая задача заканчивается коммитом **и пушем** (`git push`).
+- Работаем в ветке `chess-analyzer-core`, отведённой от `main`. По завершении Task 14 — pull request в `main`. Напрямую в `main` не коммитим.
+- Старый бот и размеченный датасет сохранены в ветке `legacy-chessdotcom-bot` (запушена на origin). Из них ничего не переиспользуется.
+- Формат сообщений коммитов — Conventional Commits (`feat:`, `fix:`), как в шагах плана. Правило `[module]` из глобального `CLAUDE.md` относится только к Odoo-аддонам и здесь не действует.
 
 ## Предпосылки окружения
 
@@ -280,7 +282,8 @@ Cross-Origin-Embedder-Policy: require-corp
 
 ```bash
 git add -A
-git commit -m "feat: scaffold Vite + React + TS, remove legacy python bot"
+git commit -m "feat: scaffold Vite + React + TS"
+git push
 ```
 
 ---
@@ -480,6 +483,7 @@ Expected: PASS, 12 tests.
 ```bash
 git add src/engine/uci.ts src/engine/uci.test.ts
 git commit -m "feat(engine): add UCI line parser"
+git push
 ```
 
 ---
@@ -628,6 +632,7 @@ Expected: PASS, 1 test. Занимает несколько секунд — г�
 ```bash
 git add src/engine/transport.ts src/engine/transport.node.ts src/engine/transport.node.test.ts src/engine/stockfish.d.ts
 git commit -m "feat(engine): add worker and node transports"
+git push
 ```
 
 ---
@@ -849,6 +854,7 @@ Expected: PASS, 4 tests.
 ```bash
 git add src/engine/engine.ts src/engine/engine.test.ts
 git commit -m "feat(engine): add analyze/stop with correct search interruption"
+git push
 ```
 
 ---
@@ -946,6 +952,8 @@ Expected: FAIL — `Failed to resolve import "./game"`.
 
 - [ ] **Step 3: Написать `src/game/game.ts`**
 
+`validateFen` — именованный экспорт `chess.js@1.4.0`, возвращает `{ ok: true }` либо `{ ok: false, error: string }`. Форма проверена на пакете; версия закреплена точно, так что дрейфа миноров не будет.
+
 ```ts
 import { Chess, validateFen } from 'chess.js'
 
@@ -1025,13 +1033,14 @@ export function toPgn(game: Chess): string {
 Run: `npx vitest run src/game/game.test.ts`
 Expected: PASS, 7 tests.
 
-Если тест `legalDests` падает на порядке ходов — не сортируйте руками, поправьте ожидание теста под реальный порядок `chess.js`. Порядок ходов для chessground не важен.
+Порядок в `legalDests` проверен на `chess.js@1.4.0`: `e2 → ['e3','e4']`, `g1 → ['f3','h3']`. Для chessground порядок не важен, но тест зафиксирован именно такой.
 
 - [ ] **Step 6: Commit**
 
 ```bash
 git add src/game/
 git commit -m "feat(game): add chess.js wrapper with FEN/PGN handling"
+git push
 ```
 
 ---
@@ -1189,6 +1198,7 @@ Expected: доска отрисована с фигурами. Пешку `e2` �
 ```bash
 git add src/ui/ src/App.tsx
 git commit -m "feat(ui): add chessground board with legal move validation"
+git push
 ```
 
 ---
@@ -1340,6 +1350,7 @@ Expected: PASS, 5 tests.
 ```bash
 git add src/ui/EvalBar.tsx src/ui/EvalBar.test.tsx src/test-setup.ts vite.config.ts package.json package-lock.json
 git commit -m "feat(ui): add eval bar with score formatting"
+git push
 ```
 
 - [ ] **Step 7: Написать `src/hooks/useAnalysis.ts`**
@@ -1523,6 +1534,7 @@ Expected:
 ```bash
 git add src/hooks/ src/ui/LineList.tsx src/App.tsx
 git commit -m "feat: wire engine to UI with live evaluation"
+git push
 ```
 
 ---
@@ -1583,6 +1595,8 @@ Expected: FAIL — `Failed to resolve import "./arrows"`.
 
 - [ ] **Step 3: Написать `src/ui/arrows.ts`**
 
+Кисти `green`, `paleGreen` и `paleGrey` входят в набор по умолчанию `chessground@9.2.1` (см. `dist/state.js`, `defaults().drawable.brushes`: `green, red, blue, yellow, paleBlue, paleGreen, paleRed, paleGrey, purple, pink, white`). Конфиг мержится поверх дефолтов, поэтому регистрировать их через `drawable.brushes` не нужно.
+
 ```ts
 import type { EvalUpdate } from '../engine/uci'
 import type { Arrow } from './Board'
@@ -1631,6 +1645,7 @@ Expected: на стартовой позиции три стрелки — яр�
 ```bash
 git add src/ui/arrows.ts src/ui/arrows.test.ts src/App.tsx
 git commit -m "feat(ui): draw best-move arrows on the board"
+git push
 ```
 
 ---
@@ -1804,6 +1819,7 @@ Expected: вставка FEN `6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1` показы
 ```bash
 git add src/ui/PositionInput.tsx src/ui/PositionInput.test.tsx src/App.tsx package.json package-lock.json
 git commit -m "feat(ui): add FEN and PGN input with error handling"
+git push
 ```
 
 ---
@@ -2015,6 +2031,7 @@ Expected: изменение глубины перезапускает анал�
 ```bash
 git add src/hooks/useSettings.ts src/hooks/useSettings.test.ts src/ui/SettingsPanel.tsx src/App.tsx
 git commit -m "feat: add persisted analysis settings"
+git push
 ```
 
 ---
@@ -2167,6 +2184,7 @@ Expected: движок перезапускается один раз, зате�
 ```bash
 git add src/engine/transport.ts src/engine/transport.test.ts src/hooks/useAnalysis.ts src/App.tsx
 git commit -m "feat(engine): recover from worker crashes once, then report"
+git push
 ```
 
 ---
@@ -2352,6 +2370,7 @@ Expected: клик по второму ходу первого варианта 
 ```bash
 git add src/game/preview.ts src/game/preview.test.ts src/ui/LineList.tsx src/App.tsx
 git commit -m "feat(ui): preview engine lines by clicking their moves"
+git push
 ```
 
 ---
@@ -2440,7 +2459,7 @@ export function validatePlacement(
 Run: `npx vitest run src/game/editor.test.ts`
 Expected: PASS, 4 tests.
 
-Если тест «rejects an empty board» падает — значит `validateFen` из chess.js пропускает позицию без королей. Тогда добавьте явную проверку `placement.includes('k') && placement.includes('K')` перед вызовом `isValidFen`.
+Проверено на `chess.js@1.4.0`: `validateFen` сам отвергает позицию без королей с сообщением `Invalid FEN: missing white king`. Дополнительная ручная проверка наличия королей не нужна.
 
 - [ ] **Step 5: Написать `src/ui/PositionEditor.tsx`**
 
@@ -2593,6 +2612,7 @@ Expected: кнопка открывает редактор. Выбор ферз�
 ```bash
 git add src/game/editor.ts src/game/editor.test.ts src/ui/PositionEditor.tsx src/App.tsx
 git commit -m "feat(ui): add manual position editor"
+git push
 ```
 
 ---
@@ -2748,6 +2768,7 @@ GPL-3.0 (требование Stockfish).
 ```bash
 git add src/pages/ src/ui/Nav.tsx src/App.tsx README.md package.json package-lock.json
 git commit -m "feat: add router and stub pages for remaining tools"
+git push
 ```
 
 ---
