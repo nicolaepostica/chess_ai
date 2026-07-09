@@ -8,6 +8,7 @@ export type AnalysisState = {
   depth: number
   stale: boolean
   multiThreaded: boolean
+  error: string | null
 }
 
 const THROTTLE_MS = 100
@@ -19,17 +20,29 @@ function toWhitePerspective(score: Score, blackToMove: boolean): Score {
 
 export function useAnalysis(fen: string, options: AnalyzeOptions): AnalysisState {
   const engineRef = useRef<Engine | null>(null)
+  const restarts = useRef(0)
+  const [engineGeneration, setEngineGeneration] = useState(0)
   const [lines, setLines] = useState<EvalUpdate[]>([])
   const [depth, setDepth] = useState(0)
   const [stale, setStale] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    engineRef.current = createEngine(createWorkerTransport())
+    const handleError = () => {
+      if (restarts.current >= 1) {
+        setError('The engine crashed. Please reload the page.')
+        return
+      }
+      restarts.current += 1
+      setEngineGeneration((generation) => generation + 1)
+    }
+
+    engineRef.current = createEngine(createWorkerTransport(undefined, handleError))
     return () => {
       engineRef.current?.terminate()
       engineRef.current = null
     }
-  }, [])
+  }, [engineGeneration])
 
   useEffect(() => {
     const engine = engineRef.current
@@ -74,7 +87,7 @@ export function useAnalysis(fen: string, options: AnalyzeOptions): AnalysisState
       cancelled = true
       engine.stop()
     }
-  }, [fen, options.depth, options.multiPV, options.chess960])
+  }, [fen, options.depth, options.multiPV, options.chess960, engineGeneration])
 
-  return { lines, depth, stale, multiThreaded: isMultiThreaded() }
+  return { lines, depth, stale, multiThreaded: isMultiThreaded(), error }
 }

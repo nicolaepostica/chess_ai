@@ -42,6 +42,7 @@ export function App() {
           single-threaded build.
         </p>
       )}
+      {analysis.error && <p role="alert">{analysis.error}</p>}
       <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
         <EvalBar score={best?.score ?? null} orientation="white" />
         <Board

@@ -19,13 +19,17 @@ export function isMultiThreaded(): boolean {
   return selectEngineUrl() === MULTI_THREADED
 }
 
-export function createWorkerTransport(scriptUrl: string = selectEngineUrl()): EngineTransport {
+export function createWorkerTransport(
+  scriptUrl: string = selectEngineUrl(),
+  onError?: (error: unknown) => void,
+): EngineTransport {
   const worker = new Worker(scriptUrl)
   let handler: (line: string) => void = () => {}
 
   worker.onmessage = (event: MessageEvent) => {
     if (typeof event.data === 'string') handler(event.data)
   }
+  worker.onerror = (event) => onError?.(event)
 
   return {
     send: (command) => worker.postMessage(command),
