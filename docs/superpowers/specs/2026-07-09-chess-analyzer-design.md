@@ -30,25 +30,48 @@
 ## Стек
 
 - Vite + React + TypeScript.
-- `stockfish.wasm` — движок.
-- `chess.js` — легальность ходов, FEN, PGN, Chess960.
-- `chessground` (Lichess, MIT) — доска, перетаскивание, стрелки.
+- `stockfish` (npm, v18.0.8) — движок, WASM-порт Stockfish 18 от nmrugg.
+- `chess.js` (v1.4.0) — легальность ходов, FEN, PGN, Chess960.
+- `chessground` (v9.2.1, Lichess, MIT) — доска, перетаскивание, стрелки.
+- `vitest` — тесты.
 - Никакого бэкенда на первом этапе. Настройки — в `localStorage`.
 
 ## Технические ограничения
 
-**SharedArrayBuffer.** Многопоточная сборка Stockfish (та, что реально сильная)
-требует заголовков `Cross-Origin-Opener-Policy: same-origin` и
-`Cross-Origin-Embedder-Policy: require-corp`. Их нужно выставить в дев-сервере
-Vite. Без них приложение молча падает в однопоточный фолбэк, который в разы
-медленнее. Если `SharedArrayBuffer` недоступен, приложение обязано сказать об
-этом явно, а не работать тихо и медленно.
+Всё в этом разделе проверено экспериментально на пакете `stockfish@18.0.8`.
 
-**NNUE-сеть** весит десятки мегабайт. Кладём в `public/stockfish/`, не тянем с
-внешнего CDN.
+**Выбор сборки движка.** Пакет содержит пять вариантов. Полный многопоточный
+(`stockfish-18.wasm`) весит **113 МБ** — неприемлемо долго грузится. Сборка
+`lite` весит **7 МБ** и, по заявлению авторов, всё ещё существенно сильнее любого
+человека. Берём `stockfish-18-lite.js` (многопоточный) как основной вариант и
+`stockfish-18-lite-single.js` как фолбэк.
+
+NNUE-сеть вшита внутрь `.wasm`; отдельного файла сети не существует. Оба файла
+(`.js` и `.wasm`) кладём рядом в `public/stockfish/` — Emscripten ищет `.wasm`
+относительно URL скрипта.
+
+**SharedArrayBuffer.** Многопоточная сборка требует заголовков
+`Cross-Origin-Opener-Policy: same-origin` и
+`Cross-Origin-Embedder-Policy: require-corp`. Их нужно выставить в дев-сервере
+Vite. Однопоточная сборка работает без них, но не умеет
+`setoption name Threads`. Если `crossOriginIsolated === false`, приложение
+загружает однопоточный фолбэк и **явно сообщает об этом** в интерфейсе, а не
+работает тихо и медленно.
 
 **Движок в Web Worker.** Анализ на глубине 22 в главном потоке заморозит
-интерфейс. Общение — по UCI-протоколу текстом, ответы стримятся построчно.
+интерфейс. Файл `stockfish-18-lite.js` спроектирован как worker-скрипт: он сам
+ставит `listener: (line) => postMessage(line)`. То есть
+`new Worker('/stockfish/stockfish-18-lite.js')` и обмен строками через
+`postMessage` / `onmessage` — это весь протокол.
+
+**В Node (для тестов)** тот же пакет грузится иначе: `require('stockfish')`
+возвращает `initEngine(flavor)`, отдающий промис с объектом, у которого есть
+`sendCommand(cmd)` и присваиваемое поле `listener`. Проверено: тест «мат в один»
+проходит под vitest за 765 мс. Пакет не имеет типов — нужен `declare module`.
+
+**Лицензия.** Stockfish распространяется под GPL-3.0. Это делает GPL-3.0
+обязательной для всего приложения. В репозитории уже лежит GPLv3 — менять ничего
+не нужно, но добавлять несовместимые по лицензии зависимости нельзя.
 
 ## Архитектура ядра
 
@@ -149,10 +172,13 @@ PGN, ручная расстановка в редакторе. Все свод�
 ```
 src/
   engine/
-    worker.ts          запуск stockfish.wasm внутри Worker
-    uci.ts             парсер строк info/bestmove
+    uci.ts             парсер строк info/bestmove — чистая функция
+    transport.ts       интерфейс EngineTransport + реализация на Worker
+    transport.node.ts  реализация на пакете stockfish, только для тестов
     engine.ts          публичный интерфейс analyze/stop
+    uci.test.ts
     engine.test.ts
+    stockfish.d.ts     declare module 'stockfish'
   game/
     game.ts            обёртка над chess.js
     pgn.ts             импорт/экспорт
@@ -169,8 +195,12 @@ src/
     Analyzer.tsx
   main.tsx
 public/
-  stockfish/           wasm + NNUE-сеть
+  stockfish/           stockfish-18-lite.js + .wasm + single-фолбэк
 ```
+
+`EngineTransport` — это шов, который позволяет `engine.ts` работать и в браузере
+(Worker), и в тестах (Node), не зная разницы. Без него шаг «движок работает до
+всякого UI» невыполним.
 
 Если `Analyzer.tsx` начнёт тянуть на несколько сотен строк — выделять панель
 анализа в отдельный компонент.
