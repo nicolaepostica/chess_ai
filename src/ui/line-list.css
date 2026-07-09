@@ -1,0 +1,27 @@
+.line-list {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.line-list li {
+  margin-bottom: 0.25rem;
+  line-height: 1.9;
+}
+
+.pv-move {
+  margin-right: 0.35rem;
+  padding: 0.1rem 0.3rem;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: none;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  color: inherit;
+  cursor: pointer;
+}
+
+.pv-move:hover,
+.pv-move:focus-visible {
+  border-color: currentColor;
+  background: rgba(127, 127, 127, 0.15);
+}

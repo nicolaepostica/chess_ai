@@ -1,5 +1,6 @@
 import type { EvalUpdate } from '../engine/uci'
 import { formatScore } from './EvalBar'
+import './line-list.css'
 
 export type LineListProps = {
   lines: EvalUpdate[]

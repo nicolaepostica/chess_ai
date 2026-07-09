@@ -23,14 +23,19 @@ export function Analyzer() {
   const [settings, updateSettings] = useSettings()
   const displayFen = preview ?? state.fen
   const previewing = preview !== null
+  const displayTurn = displayFen.split(' ')[1] === 'w' ? 'white' : 'black'
   const analysis = useAnalysis(displayFen, settings)
   const arrows = useMemo(() => linesToArrows(analysis.lines), [analysis.lines])
 
+  // Lines describe the position on screen, so walk them from there — not from
+  // the game position, which may be several plies behind during a preview.
+  // An unplayable line leaves the board where it is rather than snapping back.
   const selectLine = useCallback(
     (line: EvalUpdate, plyCount: number) => {
-      setPreview(previewFen(state.fen, line.pv.slice(0, plyCount)))
+      const next = previewFen(displayFen, line.pv.slice(0, plyCount))
+      if (next) setPreview(next)
     },
-    [state.fen],
+    [displayFen],
   )
 
   const onMove = useCallback(
@@ -84,7 +89,7 @@ export function Analyzer() {
               fen={displayFen}
               dests={previewing ? new Map() : dests}
               orientation="white"
-              turn={state.turn === 'w' ? 'white' : 'black'}
+              turn={displayTurn}
               arrows={arrows}
               onMove={onMove}
             />
