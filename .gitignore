@@ -3,3 +3,4 @@ dist/
 public/stockfish/
 tsconfig.tsbuildinfo
 .DS_Store
+.superpowers/
