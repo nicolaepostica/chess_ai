@@ -1,6 +1,8 @@
 import { useCallback, useMemo, useState } from 'react'
 import type { Chess } from 'chess.js'
+import type { EvalUpdate } from './engine/uci'
 import { createGame, getState, legalDests, tryMove } from './game/game'
+import { previewFen } from './game/preview'
 import { useAnalysis } from './hooks/useAnalysis'
 import { useSettings } from './hooks/useSettings'
 import { Board } from './ui/Board'
@@ -14,19 +16,32 @@ export function App() {
   const [game, setGame] = useState(() => createGame())
   const [state, setState] = useState(() => getState(game))
 
+  const [preview, setPreview] = useState<string | null>(null)
+
   const dests = useMemo(() => legalDests(game), [state.fen])
   const [settings, updateSettings] = useSettings()
-  const analysis = useAnalysis(state.fen, settings)
+  const displayFen = preview ?? state.fen
+  const previewing = preview !== null
+  const analysis = useAnalysis(displayFen, settings)
   const arrows = useMemo(() => linesToArrows(analysis.lines), [analysis.lines])
+
+  const selectLine = useCallback(
+    (line: EvalUpdate, plyCount: number) => {
+      setPreview(previewFen(state.fen, line.pv.slice(0, plyCount)))
+    },
+    [state.fen],
+  )
 
   const onMove = useCallback(
     (from: string, to: string) => {
+      setPreview(null)
       if (tryMove(game, from, to)) setState(getState(game))
     },
     [game],
   )
 
   const loadGame = useCallback((next: Chess) => {
+    setPreview(null)
     setGame(next)
     setState(getState(next))
   }, [])
@@ -46,8 +61,8 @@ export function App() {
       <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
         <EvalBar score={best?.score ?? null} orientation="white" />
         <Board
-          fen={state.fen}
-          dests={dests}
+          fen={displayFen}
+          dests={previewing ? new Map() : dests}
           orientation="white"
           turn={state.turn === 'w' ? 'white' : 'black'}
           arrows={arrows}
@@ -56,9 +71,14 @@ export function App() {
         <div style={{ opacity: analysis.stale ? 0.5 : 1 }}>
           <SettingsPanel settings={settings} onChange={updateSettings} />
           <p>Depth: {analysis.depth}</p>
-          <LineList lines={analysis.lines} />
+          <LineList lines={analysis.lines} onSelect={selectLine} />
         </div>
       </div>
+      {previewing && (
+        <button type="button" onClick={() => setPreview(null)}>
+          Back to game
+        </button>
+      )}
       <PositionInput onLoad={loadGame} />
     </main>
   )
