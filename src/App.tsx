@@ -1,15 +1,17 @@
 import { useCallback, useMemo, useState } from 'react'
+import type { Chess } from 'chess.js'
 import { createGame, getState, legalDests, tryMove } from './game/game'
 import { useAnalysis } from './hooks/useAnalysis'
 import { Board } from './ui/Board'
 import { EvalBar } from './ui/EvalBar'
 import { LineList } from './ui/LineList'
+import { PositionInput } from './ui/PositionInput'
 import { linesToArrows } from './ui/arrows'
 
 const OPTIONS = { depth: 18, multiPV: 3, chess960: false }
 
 export function App() {
-  const [game] = useState(() => createGame())
+  const [game, setGame] = useState(() => createGame())
   const [state, setState] = useState(() => getState(game))
 
   const dests = useMemo(() => legalDests(game), [state.fen])
@@ -22,6 +24,11 @@ export function App() {
     },
     [game],
   )
+
+  const loadGame = useCallback((next: Chess) => {
+    setGame(next)
+    setState(getState(next))
+  }, [])
 
   const best = analysis.lines[0] ?? null
 
@@ -49,6 +56,7 @@ export function App() {
           <LineList lines={analysis.lines} />
         </div>
       </div>
+      <PositionInput onLoad={loadGame} />
     </main>
   )
 }
