@@ -15,7 +15,8 @@
     "chess.js": "1.4.0",
     "chessground": "9.2.1",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-router": "^7.18.1"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",

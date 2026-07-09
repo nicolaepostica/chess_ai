@@ -1,19 +1,35 @@
 # Chess Analyzer
 
-Локальный шахматный анализатор: Stockfish 18 в браузере через WASM, без бэкенда.
+A local chess analyzer: Stockfish 18 running in the browser via WASM, no backend.
+Drag pieces, paste a FEN/PGN, or set up a position manually and get a live
+evaluation, an eval bar, and best-move arrows.
 
-Проект в стадии реализации. Код появится по ходу выполнения плана.
+## Run
 
-- Дизайн: [`docs/superpowers/specs/2026-07-09-chess-analyzer-design.md`](docs/superpowers/specs/2026-07-09-chess-analyzer-design.md)
-- План реализации: [`docs/superpowers/plans/2026-07-09-chess-analyzer-core.md`](docs/superpowers/plans/2026-07-09-chess-analyzer-core.md)
+    npm install
+    npm run dev
 
-## История
+Open http://localhost:5173
 
-До версии 0.1 в этом репозитории жил бот, который играл на chess.com, кликая
-мышью через `pyautogui`. Он сохранён в ветке `legacy-chessdotcom-bot` вместе с
-размеченным датасетом для распознавания доски. Текущий проект — не автоматизация
-чужих сайтов, а анализатор позиции, которую вы ему дали.
+The dev server sets `Cross-Origin-Opener-Policy: same-origin` and
+`Cross-Origin-Embedder-Policy: require-corp` so the multi-threaded Stockfish
+build (which needs `SharedArrayBuffer`) can run. If those headers are absent the
+app falls back to the slower single-threaded build and shows a warning.
 
-## Лицензия
+Engine binaries (the ~7 MB Stockfish WASM) are copied from `node_modules` into
+`public/stockfish/` on every `dev`/`build` and are git-ignored.
 
-GPL-3.0 — требование Stockfish.
+## Tests
+
+    npm test
+
+## Tools
+
+- `/` — position analyzer (live evaluation, MultiPV, best-move arrows, FEN/PGN
+  input, position editor, line preview).
+- `/best-move`, `/play`, `/freestyle`, `/import` — stubs for upcoming sub-projects
+  (play vs. computer, Chess960, game import).
+
+## License
+
+GPL-3.0 — required by Stockfish.
