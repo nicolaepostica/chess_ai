@@ -2,20 +2,21 @@ import { useCallback, useMemo, useState } from 'react'
 import type { Chess } from 'chess.js'
 import { createGame, getState, legalDests, tryMove } from './game/game'
 import { useAnalysis } from './hooks/useAnalysis'
+import { useSettings } from './hooks/useSettings'
 import { Board } from './ui/Board'
 import { EvalBar } from './ui/EvalBar'
 import { LineList } from './ui/LineList'
 import { PositionInput } from './ui/PositionInput'
+import { SettingsPanel } from './ui/SettingsPanel'
 import { linesToArrows } from './ui/arrows'
-
-const OPTIONS = { depth: 18, multiPV: 3, chess960: false }
 
 export function App() {
   const [game, setGame] = useState(() => createGame())
   const [state, setState] = useState(() => getState(game))
 
   const dests = useMemo(() => legalDests(game), [state.fen])
-  const analysis = useAnalysis(state.fen, OPTIONS)
+  const [settings, updateSettings] = useSettings()
+  const analysis = useAnalysis(state.fen, settings)
   const arrows = useMemo(() => linesToArrows(analysis.lines), [analysis.lines])
 
   const onMove = useCallback(
@@ -52,6 +53,7 @@ export function App() {
           onMove={onMove}
         />
         <div style={{ opacity: analysis.stale ? 0.5 : 1 }}>
+          <SettingsPanel settings={settings} onChange={updateSettings} />
           <p>Depth: {analysis.depth}</p>
           <LineList lines={analysis.lines} />
         </div>
