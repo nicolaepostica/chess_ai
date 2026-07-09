@@ -9,6 +9,7 @@ import { Board } from './ui/Board'
 import { EvalBar } from './ui/EvalBar'
 import { LineList } from './ui/LineList'
 import { PositionInput } from './ui/PositionInput'
+import { PositionEditor } from './ui/PositionEditor'
 import { SettingsPanel } from './ui/SettingsPanel'
 import { linesToArrows } from './ui/arrows'
 
@@ -46,6 +47,17 @@ export function App() {
     setState(getState(next))
   }, [])
 
+  const [editing, setEditing] = useState(false)
+
+  const applyEditedFen = useCallback(
+    (fen: string) => {
+      setEditing(false)
+      setPreview(null)
+      loadGame(createGame(fen))
+    },
+    [loadGame],
+  )
+
   const best = analysis.lines[0] ?? null
 
   return (
@@ -58,26 +70,39 @@ export function App() {
         </p>
       )}
       {analysis.error && <p role="alert">{analysis.error}</p>}
-      <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
-        <EvalBar score={best?.score ?? null} orientation="white" />
-        <Board
-          fen={displayFen}
-          dests={previewing ? new Map() : dests}
-          orientation="white"
-          turn={state.turn === 'w' ? 'white' : 'black'}
-          arrows={arrows}
-          onMove={onMove}
+      {editing ? (
+        <PositionEditor
+          initialFen={state.fen}
+          onApply={applyEditedFen}
+          onCancel={() => setEditing(false)}
         />
-        <div style={{ opacity: analysis.stale ? 0.5 : 1 }}>
-          <SettingsPanel settings={settings} onChange={updateSettings} />
-          <p>Depth: {analysis.depth}</p>
-          <LineList lines={analysis.lines} onSelect={selectLine} />
-        </div>
-      </div>
-      {previewing && (
-        <button type="button" onClick={() => setPreview(null)}>
-          Back to game
-        </button>
+      ) : (
+        <>
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+            <EvalBar score={best?.score ?? null} orientation="white" />
+            <Board
+              fen={displayFen}
+              dests={previewing ? new Map() : dests}
+              orientation="white"
+              turn={state.turn === 'w' ? 'white' : 'black'}
+              arrows={arrows}
+              onMove={onMove}
+            />
+            <div style={{ opacity: analysis.stale ? 0.5 : 1 }}>
+              <SettingsPanel settings={settings} onChange={updateSettings} />
+              <p>Depth: {analysis.depth}</p>
+              <LineList lines={analysis.lines} onSelect={selectLine} />
+            </div>
+          </div>
+          {previewing && (
+            <button type="button" onClick={() => setPreview(null)}>
+              Back to game
+            </button>
+          )}
+          <button type="button" onClick={() => setEditing(true)}>
+            Edit position
+          </button>
+        </>
       )}
       <PositionInput onLoad={loadGame} />
     </main>
