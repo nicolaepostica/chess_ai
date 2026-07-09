@@ -1,7 +1,5 @@
-.idea/
-*.log
-.env
-dev/
-__pycache__
-.venv/
-engine/
+node_modules/
+dist/
+public/stockfish/
+tsconfig.tsbuildinfo
+.DS_Store
