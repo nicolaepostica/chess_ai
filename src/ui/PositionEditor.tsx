@@ -72,11 +72,20 @@ export function PositionEditor({ initialFen, onApply, onCancel }: PositionEditor
   }
 
   return (
-    <section className="position-editor">
+    <section className="position-editor flex flex-col gap-4">
       <div className="board-wrap" ref={element} />
 
-      <div className="palette">
-        <button type="button" onClick={() => setSelected(null)} aria-pressed={selected === null}>
+      <div className="palette flex flex-wrap gap-1.5">
+        <button
+          type="button"
+          aria-pressed={selected === null}
+          onClick={() => setSelected(null)}
+          className={`rounded-lg border px-3 py-2 text-[13px] ${
+            selected === null
+              ? 'border-accent/35 bg-accent/10 text-fg'
+              : 'border-border bg-white/3 text-fg-secondary hover:text-fg'
+          }`}
+        >
           Eraser
         </button>
         {PIECES.map((piece) => (
@@ -85,31 +94,66 @@ export function PositionEditor({ initialFen, onApply, onCancel }: PositionEditor
             type="button"
             aria-pressed={selected?.key === piece.key}
             onClick={() => setSelected(piece)}
+            className={`h-10 w-10 rounded-lg border text-xl leading-none ${
+              selected?.key === piece.key
+                ? 'border-accent/35 bg-accent/10 text-fg'
+                : 'border-border bg-white/3 text-fg-secondary hover:text-fg'
+            }`}
           >
             {piece.label}
           </button>
         ))}
       </div>
 
-      <div className="editor-controls">
-        <button type="button" onClick={() => api.current?.set({ fen: EMPTY_PLACEMENT })}>
+      <div className="editor-controls flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          className="rounded-lg border border-border bg-white/3 px-3.5 py-2 text-[13px] text-fg-secondary hover:text-fg"
+          onClick={() => api.current?.set({ fen: EMPTY_PLACEMENT })}
+        >
           Clear board
         </button>
-        <label>
-          <input type="radio" checked={turn === 'w'} onChange={() => setTurn('w')} /> White to move
+
+        <label className="flex items-center gap-1.5 text-[13px] text-fg-secondary">
+          <input
+            type="radio"
+            checked={turn === 'w'}
+            onChange={() => setTurn('w')}
+            className="accent-accent"
+          />
+          White to move
         </label>
-        <label>
-          <input type="radio" checked={turn === 'b'} onChange={() => setTurn('b')} /> Black to move
+        <label className="flex items-center gap-1.5 text-[13px] text-fg-secondary">
+          <input
+            type="radio"
+            checked={turn === 'b'}
+            onChange={() => setTurn('b')}
+            className="accent-accent"
+          />
+          Black to move
         </label>
-        <button type="button" onClick={apply}>
+
+        <button
+          type="button"
+          className="rounded-lg border border-accent bg-accent px-3.5 py-2 text-[13px] font-semibold text-bg"
+          onClick={apply}
+        >
           Apply
         </button>
-        <button type="button" onClick={onCancel}>
+        <button
+          type="button"
+          className="rounded-lg border border-border bg-white/3 px-3.5 py-2 text-[13px] text-fg-secondary hover:text-fg"
+          onClick={onCancel}
+        >
           Cancel
         </button>
       </div>
 
-      {error && <p role="alert">{error}</p>}
+      {error && (
+        <p role="alert" className="text-[13px] text-accent-alt">
+          {error}
+        </p>
+      )}
     </section>
   )
 }
