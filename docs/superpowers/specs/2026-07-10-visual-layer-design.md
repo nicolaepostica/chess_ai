@@ -1,253 +1,263 @@
-# Визуальный слой анализатора — дизайн
+# The analyzer's visual layer — design
 
-Дата: 2026-07-10
-Статус: утверждён, ожидает плана реализации
-Предшественник: `2026-07-09-chess-analyzer-design.md` (под-проект 1, реализован)
+Date: 2026-07-10
+Status: approved, awaiting an implementation plan
+Predecessor: `2026-07-09-chess-analyzer-design.md` (sub-project 1, implemented)
 
-## Задача
+## Problem
 
-У приложения нет дизайна. Собственного CSS 31 непустая строка, три из которых —
-`@import` стилей chessground. Из девяти классов в разметке правила есть только у
-трёх. Шрифт страницы — `Times`, кнопки системные, вся вёрстка держится на двух
-инлайновых `style={{}}`.
+The app has no design. Its own CSS runs to 31 non-blank lines, three of which are
+`@import`s of chessground styles. Of the nine classes in the markup, only three
+have any rules. The page font is `Times`, the buttons are system defaults, and
+the whole layout rests on two inline `style={{}}` attributes.
 
-Строим визуальный слой: раскладка по образцу chessmoveexpert.com, палитра и
-шрифты с odusphere.dev, доска остаётся классической деревянной.
+We are building a visual layer: a layout modelled on chessmoveexpert.com, palette
+and fonts from odusphere.dev, and a board that stays classic wood.
 
-## Решения, принятые в брейншторме
+## Decisions taken during brainstorming
 
-- **Только палитра и шрифты** OduSphere. Никаких градиентных заголовков,
-  свечения и стеклянных панелей: анализатор — плотный инструмент, за которым
-  сидят часами, а не лендинг.
-- **Только тёмная тема.** У OduSphere светлой не существует, выводить её самим
-  не будем.
-- **Доска — классическое дерево** (`#f0d9b5` / `#b58863`), как у chessground по
-  умолчанию. Зелёные стрелки движка остаются зелёными.
-- **Потолок доски 640px** — как сейчас, правило `min(80vh, 640px)` не меняется.
-  Проверено на макете в истинном масштабе: при потолке 760 правая колонка
-  сжимается до 424px и варианты начинают переноситься на две строки.
-- **Tailwind CSS v4** как способ писать стили.
-- **Шрифты самохостятся** через `@fontsource` (npm). Работают оффлайн, ничего не
-  уходит наружу. Все три под SIL OFL, с GPL-3.0 проекта совместимы.
-- **Язык интерфейса — английский**, как в существующем коде. i18n нет.
+- **Palette and fonts only** from OduSphere. No gradient headings, no glow, no
+  glass panels: the analyzer is a dense tool people sit in front of for hours,
+  not a landing page.
+- **Dark theme only.** OduSphere has no light theme, and we will not invent one.
+- **The board stays classic wood** (`#f0d9b5` / `#b58863`), as chessground ships
+  by default. The engine's green arrows stay green.
+- **The board caps at 640px** — as today; the `min(80vh, 640px)` rule does not
+  change. Verified on a true-scale mockup: at a 760 cap the right column shrinks
+  to 424px and lines start wrapping onto two rows.
+- **Tailwind CSS v4** as the way to write styles.
+- **Fonts are self-hosted** through `@fontsource` (npm). They work offline and
+  nothing leaves the machine. All three are SIL OFL, compatible with the
+  project's GPL-3.0.
+- **The interface language is English**, as in the existing code. No i18n.
 
-## Палитра
+## Palette
 
-Взята измерением с odusphere.dev (`getComputedStyle` по отрисованным элементам).
+Taken by measurement from odusphere.dev (`getComputedStyle` over rendered
+elements).
 
-| Токен | Значение | Назначение |
+| Token | Value | Purpose |
 | --- | --- | --- |
-| `bg` | `#04050A` | фон страницы |
-| `surface` | `rgba(255,255,255,0.024)` | карточки |
-| `border` | `rgba(255,255,255,0.08)` | границы карточек и полей |
-| `fg` | `#EEF0FA` | основной текст |
-| `fg-secondary` | `#9AA1BD` | вторичный текст |
-| `fg-muted` | `#6E78A2` | подписи, неактивные вкладки |
-| `accent` | `#2DD4FF` | активная вкладка, лучшая оценка, основная кнопка |
-| `accent-alt` | `#7C83FF` | только кольцо фокуса |
-| `decor` | `#5B6184` | **нетекстовое**: разделители, отключённые элементы |
+| `bg` | `#04050A` | page background |
+| `surface` | `rgba(255,255,255,0.024)` | cards |
+| `border` | `rgba(255,255,255,0.08)` | card and field borders |
+| `fg` | `#EEF0FA` | primary text |
+| `fg-secondary` | `#9AA1BD` | secondary text |
+| `fg-muted` | `#6E78A2` | captions, inactive tabs |
+| `accent` | `#2DD4FF` | active tab, best score, primary button |
+| `accent-alt` | `#7C83FF` | focus ring only |
+| `decor` | `#5B6184` | **non-text**: dividers, disabled elements |
 
-### Контраст
+### Contrast
 
-Отношения яркостей на фоне `#04050A`, посчитаны по WCAG 2.1:
+Luminance ratios against the `#04050A` background, computed per WCAG 2.1:
 
-| Пара | Отношение | Вердикт |
+| Pair | Ratio | Verdict |
 | --- | --- | --- |
-| `fg` на `bg` | 17.92:1 | AAA |
-| `fg-secondary` на `bg` | 7.96:1 | AAA |
-| `fg-muted` (`#6E78A2`) на `bg` | 4.72:1 | AA |
-| `fg-muted` (`#6E78A2`) на карточке | 4.56:1 | AA |
-| `accent` на `bg` | 11.61:1 | AAA |
-| `accent-alt` на `bg` | 6.35:1 | AA |
-| `decor` (`#5B6184`) на `bg` | 3.38:1 | **ниже AA** |
+| `fg` on `bg` | 17.92:1 | AAA |
+| `fg-secondary` on `bg` | 7.96:1 | AAA |
+| `fg-muted` (`#6E78A2`) on `bg` | 4.72:1 | AA |
+| `fg-muted` (`#6E78A2`) on a card | 4.56:1 | AA |
+| `accent` on `bg` | 11.61:1 | AAA |
+| `accent-alt` on `bg` | 6.35:1 | AA |
+| `decor` (`#5B6184`) on `bg` | 3.38:1 | **below AA** |
 
-Исходный приглушённый цвет OduSphere — `#5B6184`. На их лендинге он лежит под
-крупными декоративными надписями и это сходит с рук. В нашем интерфейсе им
-пришлось бы набирать вкладки и подписи размером 13px, что порог AA не проходит.
-Поэтому для текста введён осветлённый `#6E78A2`, а `#5B6184` остаётся в
-токенах **только для нетекстовых нужд**. Это ограничение — часть спека, а не
-рекомендация.
+OduSphere's original muted colour is `#5B6184`. On their landing page it sits
+under large decorative lettering and gets away with it. In our interface it would
+have to set 13px tabs and captions, which does not clear the AA threshold. So a
+lightened `#6E78A2` is introduced for text, and `#5B6184` stays in the tokens
+**for non-text purposes only**. That restriction is part of the spec, not a
+suggestion.
 
-Порог надо проверять на **обоих** фонах. Первая редакция спека называла
-`#6E76A0`, потому что я сверился только с фоном страницы (4.62:1). На фоне
-карточки — то есть `surface` с прозрачностью 0.024, скомпозированный поверх
-`bg`, что даёт `rgb(10, 11, 16)` — тот же цвет опускается до **4.458:1** и порог
-не проходит. `#6E78A2` даёт 4.72:1 и 4.56:1 соответственно. Именно поэтому тест
-контраста обязан проверять каждый текстовый токен на обеих поверхностях, а не
-только на фоне страницы.
+The threshold must be checked against **both** backgrounds. The spec's first
+draft named `#6E76A0`, because I only checked the page background (4.62:1).
+Against the card background — that is, `surface` at 0.024 opacity composited over
+`bg`, which yields `rgb(10, 11, 16)` — the same colour drops to **4.458:1** and
+fails. `#6E78A2` gives 4.72:1 and 4.56:1 respectively. This is exactly why the
+contrast test must check every text token against both surfaces, not just against
+the page background.
 
-## Типографика
+## Typography
 
-- **Space Grotesk** — логотип, заголовки карточек.
-- **Inter** — интерфейсный текст.
-- **JetBrains Mono** — всё, что число или ход: оценка, глубина, варианты, FEN.
+- **Space Grotesk** — logo, card titles.
+- **Inter** — interface text.
+- **JetBrains Mono** — anything that is a number or a move: score, depth, lines, FEN.
 
-Моноширинный шрифт для чисел здесь не украшение. Оценка обновляется до десяти
-раз в секунду; у пропорционального шрифта разная ширина цифр заставляла бы
-соседние элементы дёргаться. По той же причине eval-бар и колонка оценок
-получают `font-variant-numeric: tabular-nums`.
+The monospaced font for numbers is not decoration here. The score updates up to
+ten times a second; with a proportional font the varying digit widths would make
+neighbouring elements twitch. For the same reason the eval bar and the score
+column get `font-variant-numeric: tabular-nums`.
 
-## Раскладка
+## Layout
 
-Проверено на макете в истинном масштабе 1280×760.
+Verified on a true-scale 1280×760 mockup.
 
-**Шапка** (60px, липкая): логотип `ChessAnalyzer` (акцент на втором слове), пять
-вкладок-пилюль. Активная — текст `fg`, фон `accent` с прозрачностью 0.10,
-граница `accent` с прозрачностью 0.35. Неактивные — `fg-muted`, без границы.
+**Header** (60px, sticky): the `ChessAnalyzer` logo (accent on the second word)
+and five pill tabs. The active one has `fg` text, an `accent` background at 0.10
+opacity, an `accent` border at 0.35. Inactive ones are `fg-muted`, borderless.
 
-**Тело**: две колонки с зазором 24px, внешние поля 24px.
-Слева eval-бар (28px) вплотную к доске (640px). Справа колонка (544px) из трёх
-карточек: движок, настройки, позиция.
+**Body**: two columns with a 24px gap and 24px outer padding. On the left, the
+eval bar (28px) flush against the board (640px). On the right, a column (544px)
+of three cards: engine, settings, position.
 
-**Карточка движка**: заголовок `Stockfish 18`, справа счётчик глубины.
-Ниже до пяти вариантов: номер, оценка, ходы. Первый вариант — текст `fg`, оценка
-`accent`. Остальные — `fg-secondary`.
+**Engine card**: title `Stockfish 18`, depth counter on the right. Below it, up
+to five lines: number, score, moves. The first line has `fg` text and an `accent`
+score. The rest are `fg-secondary`.
 
-**Крупного заголовка с подзаголовком нет.** У chessmoveexpert он существует ради
-поисковой выдачи, а от SEO мы отказались ещё в первом спеке. Освободившиеся
-~120px отданы доске.
+**There is no big heading with a subtitle.** chessmoveexpert has one for search
+rankings, and we dropped SEO back in the first spec. The ~120px freed up go to
+the board.
 
-## Разделение `Depth`
+## Splitting `Depth`
 
-Сейчас интерфейс дважды печатает `Depth: 18` — подпись к ползунку настроек
-(`SettingsPanel.tsx:12`) и достигнутую движком глубину (`Analyzer.tsx:98`).
-Различить их невозможно; совпадение чисел случайно.
+Today the interface prints `Depth: 18` twice — as the settings slider's label
+(`SettingsPanel.tsx:12`) and as the depth the engine has reached
+(`Analyzer.tsx:98`). There is no telling them apart; the numbers matching is a
+coincidence.
 
-Данные для разделения уже есть, логику менять не нужно: `settings.depth` — цель,
-`analysis.depth` — достигнутое. Ползунок называется `Target depth`, карточка
-движка показывает `depth 12/18`, растущее по ходу счёта.
+The data needed to separate them already exists, and no logic changes:
+`settings.depth` is the target, `analysis.depth` is what was reached. The slider
+is renamed `Target depth`, and the engine card shows `depth 12/18`, climbing as
+the search runs.
 
-## Приглушение при пересчёте
+## Dimming during a recalculation
 
-Сейчас `Analyzer.tsx` гасит всю правую колонку через `opacity: 0.5`, включая
-ползунки настроек, которые не устарели. Гасить нужно только числа: оценку,
-глубину и список вариантов.
+Today `Analyzer.tsx` dims the entire right column through `opacity: 0.5`,
+including the settings sliders, which are not stale. Only the numbers should dim:
+the score, the depth, and the line list.
 
-## Файлы
+## Files
 
-**Создаются**
+**Created**
 
-- `src/styles/index.css` — `@import "tailwindcss"`, блок `@theme` с токенами,
-  импорты трёх шрифтов из `@fontsource`. Единственная точка входа стилей.
-- `src/ui/Shell.tsx` — липкая шапка и контейнер страницы. В него оборачиваются
-  все пять маршрутов, поэтому страницы-заглушки получают оформление бесплатно.
-- `src/ui/Card.tsx` — карточка: заголовок плюс необязательный слот справа (туда
-  уходит счётчик глубины). Убирает тройное дублирование вёрстки правой колонки.
-- `src/styles/contrast.ts` + тест — функция отношения яркостей по WCAG.
+- `src/styles/index.css` — `@import "tailwindcss"`, an `@theme` block with the
+  tokens, imports of the three `@fontsource` fonts. The single entry point for
+  styles.
+- `src/ui/Shell.tsx` — the sticky header and the page container. All five routes
+  wrap in it, so the stub pages get their styling for free.
+- `src/ui/Card.tsx` — a card: a title plus an optional slot on the right (the
+  depth counter goes there). Removes the threefold duplication in the right
+  column's markup.
+- `src/styles/contrast.ts` + a test — the WCAG luminance-ratio function.
 
-**Изменяются**
+**Modified**
 
-- `vite.config.ts` — плагин `@tailwindcss/vite`.
-- `src/main.tsx` — импорт `styles/index.css`.
-- `src/ui/EvalBar.tsx` — убрать инлайновые стили (в JSX зашиты `#403d39`, `24px`).
-  Функции `whiteWinProbability` и `formatScore` **не трогать**: покрыты тестами.
-- `src/ui/Nav.tsx` — цепочка ссылок превращается в пилюли.
-- `src/pages/Analyzer.tsx` — убрать два инлайновых `style={{}}`, ввести сетку,
-  развести `Depth`, сузить приглушение.
-- `src/ui/SettingsPanel.tsx` — переименовать подпись в `Target depth`, оформление.
-- `src/ui/PositionInput.tsx`, `src/ui/PositionEditor.tsx` — только оформление.
-- `src/pages/*.tsx` (четыре заглушки) — оформление через `Shell`.
+- `vite.config.ts` — the `@tailwindcss/vite` plugin.
+- `src/main.tsx` — import `styles/index.css`.
+- `src/ui/EvalBar.tsx` — drop the inline styles (`#403d39` and `24px` are baked
+  into the JSX). Leave `whiteWinProbability` and `formatScore` **alone**: they are
+  covered by tests.
+- `src/ui/Nav.tsx` — the chain of links becomes pills.
+- `src/pages/Analyzer.tsx` — drop the two inline `style={{}}`, introduce the grid,
+  separate `Depth`, narrow the dimming.
+- `src/ui/SettingsPanel.tsx` — rename the label to `Target depth`, restyle.
+- `src/ui/PositionInput.tsx`, `src/ui/PositionEditor.tsx` — styling only.
+- `src/pages/*.tsx` (the four stubs) — styling through `Shell`.
 
-**Удаляется**
+**Deleted**
 
-- `src/ui/line-list.css` — его правила уходят в утилиты Tailwind.
+- `src/ui/line-list.css` — its rules move into Tailwind utilities.
 
-**Остаётся обычным CSS**
+**Stays plain CSS**
 
-- `src/ui/board.css` — единственное место, где импортируются стили chessground;
-  переносить их в утилиты нельзя. Правится минимально: `.board-wrap` начинает
-  брать ширину из переменной `--board-size` вместо повторения формулы
-  `min(80vh, 640px)`. Из той же переменной считается высота eval-бара, поэтому
-  разъехаться они не могут.
+- `src/ui/board.css` — the only place chessground's styles are imported; they
+  cannot move into utilities. It changes minimally: `.board-wrap` starts taking
+  its width from a `--board-size` variable instead of repeating the
+  `min(80vh, 640px)` formula. The eval bar's height is computed from the same
+  variable, so the two cannot drift apart.
 
-**Остаётся нетронутым**
+**Stays untouched**
 
-- `src/engine/`, `src/game/`, `src/hooks/` — если для перекраски пришлось тронуть
-  хоть один файл оттуда, значит протекла абстракция.
+- `src/engine/`, `src/game/`, `src/hooks/` — if a repaint required touching even
+  one file in there, an abstraction has leaked.
 
-## Узкие экраны
+## Narrow screens
 
-Одна точка перелома: ниже 1100px колонки складываются в стопку — eval-бар с
-доской сверху, карточки под ними. Доска перестаёт считаться от `80vh` и
-считается от ширины, иначе на телефоне вылезет за экран. Вкладки шапки уезжают в
-горизонтальную прокрутку: гамбургер ради пяти пунктов неоправдан.
+One breakpoint: below 1100px the columns collapse into a stack — eval bar and
+board on top, cards beneath. The board stops sizing from `80vh` and sizes from
+the width, or it will run off a phone screen. The header tabs move into a
+horizontal scroll: a hamburger for five items is unjustified.
 
-**Из ширины вычитается не только поле страницы.** В одной строке с доской стоят
-eval-бар (1.75rem) и зазор между ними (0.625rem), плюс поля страницы по 1.5rem
-с каждой стороны. Итого `--board-size: min(100vw - 5.375rem, 640px)`. Если
-вычесть только поля (`3rem`), страница на телефоне прокручивается вбок ровно на
-ширину бара с зазором — 14px при окне 390px. Проверено в браузере.
+**More than the page padding is subtracted from the width.** Sharing the board's
+row are the eval bar (1.75rem) and the gap between them (0.625rem), plus 1.5rem
+of page padding on each side. That totals `--board-size: min(100vw - 5.375rem, 640px)`.
+Subtracting only the padding (`3rem`) makes the page scroll sideways on a phone
+by exactly the bar's width plus the gap — 14px in a 390px window. Verified in a
+browser.
 
-## Фокус и клавиатура
+## Focus and keyboard
 
-Сейчас фокус не виден нигде: дефолтные стили кнопок сняты. Каждый интерактивный
-элемент получает кольцо фокуса на `accent-alt` (`#7C83FF`). Второй акцент нужен
-именно здесь, чтобы кольцо не сливалось с активной вкладкой на циане.
+Right now focus is invisible everywhere: the buttons' default styles were
+stripped. Every interactive element gets a focus ring in `accent-alt` (`#7C83FF`).
+The second accent exists precisely for this, so the ring does not blend into the
+cyan active tab.
 
-Ходы в вариантах уже кнопки, то есть с клавиатуры доступны; им нужно только
-видимое состояние.
+Moves within lines are already buttons, hence reachable from the keyboard; they
+only need a visible state.
 
-## Тестирование
+## Testing
 
-**Новый тест — контраст токенов.** Функция считает отношение яркостей, тест
-утверждает, что каждая текстовая пара проходит 4.5:1. Попытка вернуть красивый,
-но тусклый цвет упрётся в красную сборку, а не в чью-то бдительность.
+**A new test — token contrast.** The function computes the luminance ratio, and
+the test asserts that every text pair clears 4.5:1. An attempt to bring back a
+pretty but dim colour runs into a red build rather than into someone's vigilance.
 
-**Eval-бар: под оценкой всегда лежит собственная плашка.** Число печатается у
-нижнего края бара. Под ним либо светлая заливка белых, либо тёмный корпус —
-смотря какова ориентация доски и доля белых.
+**The eval bar: the score always sits on a scrim of its own.** The number is
+printed at the bar's bottom edge. Beneath it lies either the light white fill or
+the dark body — depending on the board's orientation and white's share.
 
-Константный цвет текста неверен: при мате против стороны, которой развёрнута
-доска, заливка нулевая, и тёмный текст даёт на корпусе контраст 1.10:1. Порог по
-доле белых тоже неверен, хотя это менее очевидно: граница «залито / не залито»
-равна высоте подписи в пикселях, делённой на высоту бара, а бар меняется от
-~300px до 640px. Для белой ориентации порог уходит с 0.053 до 0.025, для чёрной
-— с 0.987 до 0.994. Единого числа не существует.
+A constant text colour is wrong: when the side the board faces is being mated,
+the fill is zero, and dark text on the body gives a contrast of 1.10:1. A
+threshold on white's share is wrong too, though less obviously: the filled /
+unfilled boundary equals the readout's pixel height divided by the bar's height,
+and the bar ranges from ~300px to 640px. For the white orientation the threshold
+moves from 0.053 to 0.025; for black, from 0.987 to 0.994. No single number
+exists.
 
-Поэтому подпись получает собственную полупрозрачную тёмную плашку
-(`bg-well/85`) и светлый текст: 16.3:1 на корпусе, 10.9:1 на заливке. Геометрию
-знать не нужно, порогов нет. Это единственное место, где к существующему
-тестовому файлу дописываются тесты.
+So the readout gets a semi-transparent dark scrim of its own (`bg-well/85`) and
+light text: 16.3:1 over the body, 10.9:1 over the fill. No geometry to know, no
+thresholds. This is the one place where tests are appended to an existing test
+file.
 
-**Существующие 59 тестов должны пройти без единой правки.** Мы меняем
-оформление, а не поведение. Это и есть главная проверка того, что границы
-модулей проведены верно. Исключение ровно одно и названо выше: в
-`src/ui/EvalBar.test.tsx` тесты **дописываются**, прежние не трогаются. Язык интерфейса остаётся английским, поэтому
-`PositionInput.test.tsx` (ищет кнопку `Load FEN`) и `Analyzer.test.tsx` (мокает
-`Board` по пропсам `fen` и `turn`) не затрагиваются.
+**The existing 59 tests must pass without a single edit.** We are changing
+presentation, not behaviour. That is the main check that the module boundaries
+were drawn correctly. There is exactly one exception, named above: tests are
+**appended** in `src/ui/EvalBar.test.tsx`, and the old ones are left alone. The
+interface language stays English, so `PositionInput.test.tsx` (which looks for a
+`Load FEN` button) and `Analyzer.test.tsx` (which mocks `Board` by its `fen` and
+`turn` props) are unaffected.
 
-Перевёрстка не должна снести зацепки, за которые держатся тесты и программы
-чтения с экрана. Сохраняются:
+Restyling must not tear out the handles that tests and screen readers hold on to.
+These are preserved:
 
-- `data-testid="eval-bar"` на eval-баре;
-- `role="alert"` на сообщениях об ошибке (невалидный FEN, невалидный PGN,
-  позиция без королей, падение движка, отсутствие многопоточности);
-- доступные имена кнопок: `Load FEN`, `Load PGN`, `Back to game`,
+- `data-testid="eval-bar"` on the eval bar;
+- `role="alert"` on error messages (invalid FEN, invalid PGN, a position with no
+  kings, an engine crash, no multi-threading);
+- accessible button names: `Load FEN`, `Load PGN`, `Back to game`,
   `Edit position`, `Apply`, `Cancel`, `Clear board`, `Eraser`;
-- `id` полей `fen-input`, `pgn-input`, `depth`, `multipv` и связанные с ними
-  `<label htmlFor>`;
-- классы `line-list`, `pv-move`, `position-editor`, `palette`,
-  `editor-controls` — по ним ходит браузерная проверка.
+- the `fen-input`, `pgn-input`, `depth`, `multipv` field `id`s and their
+  associated `<label htmlFor>`;
+- the `line-list`, `pv-move`, `position-editor`, `palette`, `editor-controls`
+  classes — the in-browser walkthrough navigates by them.
 
-**Визуальную часть тестами не покрываем.** Вместо этого прогон в браузере по
-списку: анализатор, редактор позиции, просмотр варианта, узкий экран, обход с
-клавиатуры.
+**The visual side is not covered by tests.** Instead, a browser pass down a list:
+analyzer, position editor, line preview, narrow screen, keyboard traversal.
 
-## Зависимости
+## Dependencies
 
-Проверены на существование и совместимость:
+Checked for existence and compatibility:
 
 - `tailwindcss@4.3.2`
-- `@tailwindcss/vite@4.3.2` (peer: `vite ^5.2 || ^6 || ^7 || ^8` — наш Vite 6 подходит)
+- `@tailwindcss/vite@4.3.2` (peer: `vite ^5.2 || ^6 || ^7 || ^8` — our Vite 6 fits)
 - `@fontsource/inter@5.2.8`
 - `@fontsource/space-grotesk@5.2.10`
 - `@fontsource/jetbrains-mono@5.2.8`
 
-## Чего сознательно не делаем
+## Deliberately out of scope
 
-- Светлой темы.
-- Анимаций сверх той, что уже есть у eval-бара.
-- Логотипа-картинки: только текст.
-- AI-чата: он остаётся под-проектом 4, карточка под него не резервируется.
+- A light theme.
+- Animation beyond what the eval bar already has.
+- An image logo: text only.
+- The AI chat: it remains sub-project 4, and no card is reserved for it.
 
-Всё перечисленное добавляется поверх токенов позже и в этот спек не входит.
+Everything listed gets layered on top of the tokens later and is not part of this
+spec.

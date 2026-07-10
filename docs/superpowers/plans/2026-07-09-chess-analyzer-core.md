@@ -1,12 +1,12 @@
 # Chess Analyzer Core — Implementation Plan
 
-> **For agentic workers:** выполняйте задачи по порядку, по одной. Шаги помечены чекбоксами (`- [ ]`) для отслеживания. Каждая задача заканчивается коммитом и не зависит от того, каким агентом или в каком окружении она исполняется.
+> **For agentic workers:** work the tasks in order, one at a time. Steps are marked with checkboxes (`- [ ]`) for tracking. Every task ends with a commit and does not depend on which agent runs it, or in what environment.
 >
-> Если ваш харнесс — Claude Code с плагином superpowers, используйте `superpowers:subagent-driven-development` или `superpowers:executing-plans`. Если нет — просто идите по шагам сверху вниз, это ничего не меняет.
+> If your harness is Claude Code with the superpowers plugin, use `superpowers:subagent-driven-development` or `superpowers:executing-plans`. If not, just walk the steps top to bottom; it changes nothing.
 
-**Goal:** Локальный браузерный шахматный анализатор: доска, Stockfish 18 в Web Worker, живая оценка позиции, eval-бар, стрелки лучших ходов, ввод FEN/PGN.
+**Goal:** A local browser chess analyzer: a board, Stockfish 18 in a Web Worker, live position evaluation, an eval bar, best-move arrows, FEN/PGN input.
 
-**Architecture:** Три модуля с жёсткими границами. `engine/` знает про UCI и WASM, но не про React. `game/` знает про правила шахмат, но не про движок и DOM. `ui/` — React-компоненты, получающие данные пропсами. Их связывает единственный хук `useAnalysis`. Шов `EngineTransport` позволяет движку работать и в браузере (Worker), и в тестах (Node).
+**Architecture:** Three modules with hard boundaries. `engine/` knows about UCI and WASM but not about React. `game/` knows the rules of chess but neither the engine nor the DOM. `ui/` holds React components that receive data as props. A single hook, `useAnalysis`, binds them together. The `EngineTransport` seam lets the engine run both in the browser (Worker) and in tests (Node).
 
 **Tech Stack:** Vite, React 19, TypeScript, vitest, `stockfish@18.0.8`, `chess.js@1.4.0`, `chessground@9.2.1`.
 
@@ -14,51 +14,51 @@
 
 ## Global Constraints
 
-- Все зависимости фиксируются точными версиями: `stockfish@18.0.8`, `chess.js@1.4.0`, `chessground@9.2.1`.
-- Сборка движка — только `lite` (7 МБ). Полная сборка (113 МБ) не используется никогда.
-- Лицензия проекта — GPL-3.0 (требование Stockfish). Не добавлять зависимости с несовместимыми лицензиями.
-- `engine/` не импортирует React. `game/` не импортирует ни `engine/`, ни React. Нарушение этих границ — повод отклонить задачу на ревью.
-- Тестовая позиция «мат в один» используется во всём плане: FEN `6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1`, правильный ход `a1a8`, оценка `{ type: 'mate', value: 1 }`.
-- Каждая задача заканчивается коммитом **и пушем** (`git push`).
-- Работаем в ветке `chess-analyzer-core`, отведённой от `main`. По завершении Task 14 — pull request в `main`. Напрямую в `main` не коммитим.
-- Старый бот и размеченный датасет сохранены в ветке `legacy-chessdotcom-bot` (запушена на origin). Из них ничего не переиспользуется.
-- Формат сообщений коммитов — Conventional Commits (`feat:`, `fix:`), как в шагах плана. Правило `[module]` из глобального `CLAUDE.md` относится только к Odoo-аддонам и здесь не действует.
+- All dependencies are pinned to exact versions: `stockfish@18.0.8`, `chess.js@1.4.0`, `chessground@9.2.1`.
+- The engine build is `lite` only (7 MB). The full build (113 MB) is never used.
+- The project's license is GPL-3.0 (a Stockfish requirement). Do not add dependencies with incompatible licenses.
+- `engine/` does not import React. `game/` imports neither `engine/` nor React. Breaking these boundaries is grounds to reject the task at review.
+- The mate-in-one test position is used throughout this plan: FEN `6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1`, the correct move `a1a8`, the score `{ type: 'mate', value: 1 }`.
+- Every task ends with a commit **and a push** (`git push`).
+- We work on the `chess-analyzer-core` branch, cut from `main`. On finishing Task 14, open a pull request into `main`. We do not commit to `main` directly.
+- The old bot and the labelled dataset are preserved on the `legacy-chessdotcom-bot` branch (pushed to origin). Nothing is reused from them.
+- Commit messages follow Conventional Commits (`feat:`, `fix:`), as in the plan's steps. The `[module]` rule from the global `CLAUDE.md` applies only to Odoo addons and does not apply here.
 
-## Предпосылки окружения
+## Environment premises
 
-Проверено на момент написания плана:
+Verified at the time this plan was written:
 
-| Требование | Проверенная версия | Как проверить |
+| Requirement | Verified version | How to check |
 | --- | --- | --- |
 | Node.js ≥ 20 | 24.14.0 | `node -v` |
 | npm ≥ 10 | 11.9.0 | `npm -v` |
 | git | 2.39.2 | `git --version` |
-| Сеть до registry.npmjs.org | — | `npm ping` |
+| Network to registry.npmjs.org | — | `npm ping` |
 
-Указанный набор зависимостей резолвится без конфликтов пиров: `vite@6.4.3`,
-`vitest@4.1.10`, `@vitejs/plugin-react@4.7.0`, `react@19.2.7`. Отдельно
-проверено, что дев-сервер Vite с конфигом из Task 1 действительно отдаёт
-заголовки `Cross-Origin-Opener-Policy: same-origin` и
-`Cross-Origin-Embedder-Policy: require-corp`.
+The listed dependency set resolves with no peer conflicts: `vite@6.4.3`,
+`vitest@4.1.10`, `@vitejs/plugin-react@4.7.0`, `react@19.2.7`. Separately
+verified: the Vite dev server with the config from Task 1 really does serve the
+`Cross-Origin-Opener-Policy: same-origin` and
+`Cross-Origin-Embedder-Policy: require-corp` headers.
 
-## Шаги, требующие браузера
+## Steps that need a browser
 
-Девять шагов помечены «Проверить вручную» и требуют живого браузера: Task 6/4,
-7/10, 8/6, 9/6, 10/7, 11/7, 12/7, 13/7, 14/7. Автоматическими тестами они не
-покрыты сознательно — проверяются перетаскивание фигур, отрисовка стрелок и
-анимация, которые дешевле увидеть, чем описать.
+Nine steps are marked "Check by hand" and need a live browser: Task 6/4,
+7/10, 8/6, 9/6, 10/7, 11/7, 12/7, 13/7, 14/7. They are deliberately not covered
+by automated tests — they check piece dragging, arrow rendering and animation,
+which are cheaper to see than to describe.
 
-**Агенту без браузера:** выполняйте всё остальное, а эти шаги отмечайте как
-пропущенные и явно перечисляйте их в отчёте по задаче. Не помечайте задачу
-выполненной, умалчивая о пропущенной проверке. Автоматическая часть каждой
-задачи (`npx vitest run ...`) полностью самодостаточна и не требует браузера.
+**If you have no browser:** do everything else, mark these steps as skipped, and
+list them explicitly in your task report. Do not mark a task done while staying
+quiet about a skipped check. The automated part of every task
+(`npx vitest run ...`) is entirely self-sufficient and needs no browser.
 
-Единственное исключение — Task 1, где проверку изоляции можно и нужно
-автоматизировать через `curl` (см. её Step 8).
+The one exception is Task 1, where the isolation check can and should be
+automated through `curl` (see its Step 8).
 
 ---
 
-### Task 1: Скаффолд проекта и удаление старого кода
+### Task 1: Scaffold the project and remove the old code
 
 **Files:**
 - Create: `package.json`, `vite.config.ts`, `tsconfig.json`, `index.html`, `src/main.tsx`, `src/App.tsx`
@@ -66,20 +66,20 @@
 - Create: `scripts/copy-stockfish.js`
 
 **Interfaces:**
-- Consumes: ничего.
-- Produces: работающий `npm run dev` и `npm test`; файлы движка в `public/stockfish/`.
+- Consumes: nothing.
+- Produces: a working `npm run dev` and `npm test`; engine files in `public/stockfish/`.
 
-- [ ] **Step 1: Убедиться, что репозиторий чист**
+- [ ] **Step 1: Confirm the repository is clean**
 
-Старый питоновский бот уже удалён из `main` (коммит «Remove chess.com bot») и
-сохранён в ветке `legacy-chessdotcom-bot`. Отдельного шага удаления не требуется
-— только проверка исходного состояния.
+The old Python bot is already removed from `main` (commit "Remove chess.com bot")
+and preserved on the `legacy-chessdotcom-bot` branch. No separate removal step is
+needed — only a check of the starting state.
 
 Run: `git ls-files`
-Expected: ровно четыре записи — `.gitignore`, `LICENSE`, `README.md` и два файла
-под `docs/`. Если видите `main.py` или `extensions/`, вы не на `main`.
+Expected: exactly these entries — `.gitignore`, `LICENSE`, `README.md` and two
+files under `docs/`. If you see `main.py` or `extensions/`, you are not on `main`.
 
-- [ ] **Step 2: Создать `package.json`**
+- [ ] **Step 2: Create `package.json`**
 
 ```json
 {
@@ -113,11 +113,11 @@ Expected: ровно четыре записи — `.gitignore`, `LICENSE`, `REA
 }
 ```
 
-`stockfish` в devDependencies: в рантайме браузер грузит файлы из `public/`, а не из `node_modules`. Пакету он нужен только для копирования и для Node-тестов.
+`stockfish` sits in devDependencies: at runtime the browser loads files from `public/`, not from `node_modules`. The package needs it only for copying and for the Node tests.
 
-- [ ] **Step 3: Создать `scripts/copy-stockfish.js`**
+- [ ] **Step 3: Create `scripts/copy-stockfish.js`**
 
-Файлы движка (7 МБ) не коммитим — копируем из `node_modules` при каждом `dev`/`build`.
+The engine files (7 MB) are not committed — they are copied from `node_modules` on every `dev`/`build`.
 
 ```js
 import { copyFileSync, mkdirSync, existsSync } from 'node:fs'
@@ -144,11 +144,11 @@ for (const file of FILES) {
 console.log(`Copied ${FILES.length} engine files to ${outDir}`)
 ```
 
-- [ ] **Step 4: Создать `vite.config.ts` с заголовками COOP/COEP**
+- [ ] **Step 4: Create `vite.config.ts` with the COOP/COEP headers**
 
-Без этих заголовков `SharedArrayBuffer` недоступен и многопоточная сборка не запустится.
+Without these headers `SharedArrayBuffer` is unavailable and the multi-threaded build will not start.
 
-Импорт `defineConfig` идёт из `vitest/config`, а не из `vite`: только он типизирует блок `test`.
+`defineConfig` is imported from `vitest/config` rather than from `vite`: only that one types the `test` block.
 
 ```ts
 import { defineConfig } from 'vitest/config'
@@ -170,9 +170,9 @@ export default defineConfig({
 })
 ```
 
-`testTimeout` поднят: загрузка 7-мегабайтного WASM в Node занимает заметное время.
+`testTimeout` is raised: loading 7 MB of WASM in Node takes a noticeable while.
 
-- [ ] **Step 5: Создать `tsconfig.json`**
+- [ ] **Step 5: Create `tsconfig.json`**
 
 ```json
 {
@@ -192,13 +192,13 @@ export default defineConfig({
 }
 ```
 
-- [ ] **Step 6: Создать `index.html`, `src/main.tsx`, `src/App.tsx`**
+- [ ] **Step 6: Create `index.html`, `src/main.tsx`, `src/App.tsx`**
 
 `index.html`:
 
 ```html
 <!doctype html>
-<html lang="ru">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -238,9 +238,9 @@ export function App() {
 }
 ```
 
-- [ ] **Step 7: Заменить `.gitignore`**
+- [ ] **Step 7: Replace `.gitignore`**
 
-Существующий файл описывает питоновский проект. Заменить его содержимое целиком:
+The existing file describes a Python project. Replace its contents entirely:
 
 ```gitignore
 node_modules/
@@ -249,16 +249,16 @@ public/stockfish/
 .DS_Store
 ```
 
-`public/stockfish/` не коммитим: 14 МБ бинарников, которые `npm run dev`
-копирует из `node_modules` сам.
+`public/stockfish/` is not committed: 14 MB of binaries that `npm run dev` copies
+out of `node_modules` on its own.
 
-- [ ] **Step 8: Установить зависимости и проверить изоляцию**
+- [ ] **Step 8: Install the dependencies and check isolation**
 
 ```bash
 npm install
 ```
 
-Проверка не требует браузера: `crossOriginIsolated` в браузере — прямое следствие двух заголовков, а их видно через `curl`.
+The check needs no browser: `crossOriginIsolated` in the browser follows directly from the two headers, and `curl` can see those.
 
 ```bash
 npm run dev > /tmp/vite.log 2>&1 &
@@ -267,16 +267,16 @@ curl -sI http://localhost:5173/ | grep -i cross-origin
 kill %1
 ```
 
-Expected — ровно две строки:
+Expected — exactly two lines:
 
 ```
 Cross-Origin-Opener-Policy: same-origin
 Cross-Origin-Embedder-Policy: require-corp
 ```
 
-Если строк нет, дальше идти нельзя: многопоточный движок не запустится, а причина будет неочевидна.
+If the lines are absent, do not go on: the multi-threaded engine will not start and the reason will be far from obvious.
 
-Дополнительно, если браузер доступен: открыть `http://localhost:5173` и убедиться, что страница показывает `crossOriginIsolated: true`.
+Additionally, if a browser is available: open `http://localhost:5173` and confirm the page shows `crossOriginIsolated: true`.
 
 - [ ] **Step 9: Commit**
 
@@ -288,25 +288,25 @@ git push
 
 ---
 
-### Task 2: Парсер UCI
+### Task 2: The UCI parser
 
-Самая ломкая часть системы и единственная, которую можно полностью протестировать без движка.
+The most brittle part of the system, and the only one that can be tested in full without the engine.
 
 **Files:**
 - Create: `src/engine/uci.ts`
 - Test: `src/engine/uci.test.ts`
 
 **Interfaces:**
-- Consumes: ничего.
+- Consumes: nothing.
 - Produces:
   - `type Score = { type: 'cp' | 'mate'; value: number }`
   - `type EvalUpdate = { depth: number; multipv: number; score: Score; pv: string[] }`
   - `type UciMessage = { kind: 'info'; update: EvalUpdate } | { kind: 'bestmove'; move: string } | { kind: 'uciok' } | { kind: 'readyok' } | { kind: 'other' }`
   - `function parseUciLine(line: string): UciMessage`
 
-- [ ] **Step 1: Написать падающий тест**
+- [ ] **Step 1: Write a failing test**
 
-Строки взяты из реального вывода `stockfish@18.0.8`, не выдуманы.
+The lines are taken from real `stockfish@18.0.8` output; they are not invented.
 
 `src/engine/uci.test.ts`:
 
@@ -396,12 +396,12 @@ describe('parseUciLine', () => {
 })
 ```
 
-- [ ] **Step 2: Запустить тест, убедиться что падает**
+- [ ] **Step 2: Run the test, confirm it fails**
 
 Run: `npx vitest run src/engine/uci.test.ts`
 Expected: FAIL — `Failed to resolve import "./uci"`.
 
-- [ ] **Step 3: Написать минимальную реализацию**
+- [ ] **Step 3: Write the minimal implementation**
 
 `src/engine/uci.ts`:
 
@@ -471,9 +471,9 @@ function readInt(tokens: string[], key: string): number | null {
 }
 ```
 
-`tokens.indexOf('depth')` сравнивает токены целиком, поэтому `seldepth` не совпадёт. По той же причине `multipv` не будет принят за `pv`.
+`tokens.indexOf('depth')` compares whole tokens, so `seldepth` will not match. For the same reason `multipv` will not be mistaken for `pv`.
 
-- [ ] **Step 4: Запустить тесты, убедиться что проходят**
+- [ ] **Step 4: Run the tests, confirm they pass**
 
 Run: `npx vitest run src/engine/uci.test.ts`
 Expected: PASS, 12 tests.
@@ -488,9 +488,9 @@ git push
 
 ---
 
-### Task 3: Транспорт движка
+### Task 3: The engine transport
 
-Шов между `engine.ts` и конкретным способом запуска Stockfish. Именно он позволяет тестировать движок в Node без браузера.
+The seam between `engine.ts` and the concrete way Stockfish is launched. It is what makes the engine testable in Node, without a browser.
 
 **Files:**
 - Create: `src/engine/transport.ts`
@@ -498,16 +498,16 @@ git push
 - Create: `src/engine/stockfish.d.ts`
 
 **Interfaces:**
-- Consumes: ничего.
+- Consumes: nothing.
 - Produces:
   - `interface EngineTransport { send(command: string): void; onLine(handler: (line: string) => void): void; terminate(): void }`
   - `function createWorkerTransport(scriptUrl: string): EngineTransport`
-  - `function selectEngineUrl(): string` — возвращает путь к многопоточной сборке при `crossOriginIsolated`, иначе к однопоточной
+  - `function selectEngineUrl(): string` — returns the path to the multi-threaded build when `crossOriginIsolated`, otherwise the single-threaded one
   - `async function createNodeTransport(flavor?: string): Promise<EngineTransport>`
 
-- [ ] **Step 1: Создать `src/engine/stockfish.d.ts`**
+- [ ] **Step 1: Create `src/engine/stockfish.d.ts`**
 
-Пакет `stockfish` не поставляет типов.
+The `stockfish` package ships no types.
 
 ```ts
 declare module 'stockfish' {
@@ -520,7 +520,7 @@ declare module 'stockfish' {
 }
 ```
 
-- [ ] **Step 2: Создать `src/engine/transport.ts`**
+- [ ] **Step 2: Create `src/engine/transport.ts`**
 
 ```ts
 export interface EngineTransport {
@@ -533,8 +533,8 @@ const MULTI_THREADED = '/stockfish/stockfish-18-lite.js'
 const SINGLE_THREADED = '/stockfish/stockfish-18-lite-single.js'
 
 /**
- * Многопоточная сборка требует SharedArrayBuffer, который доступен только
- * в cross-origin isolated контексте (заголовки COOP/COEP).
+ * The multi-threaded build needs SharedArrayBuffer, which is only available in a
+ * cross-origin isolated context (the COOP/COEP headers).
  */
 export function selectEngineUrl(): string {
   return globalThis.crossOriginIsolated ? MULTI_THREADED : SINGLE_THREADED
@@ -562,9 +562,9 @@ export function createWorkerTransport(scriptUrl: string = selectEngineUrl()): En
 }
 ```
 
-`stockfish-18-lite.js` сам вызывает `postMessage(line)` для каждой строки вывода — это его штатный режим работы как worker-скрипта. Никакой обёртки писать не нужно.
+`stockfish-18-lite.js` calls `postMessage(line)` for every output line itself — that is its normal mode of operation as a worker script. No wrapper needs writing.
 
-- [ ] **Step 3: Создать `src/engine/transport.node.ts`**
+- [ ] **Step 3: Create `src/engine/transport.node.ts`**
 
 ```ts
 import { createRequire } from 'node:module'
@@ -572,7 +572,7 @@ import type { EngineTransport } from './transport'
 
 const require = createRequire(import.meta.url)
 
-/** Только для тестов. В браузер этот файл не попадает. */
+/** Tests only. This file never reaches the browser. */
 export async function createNodeTransport(flavor = 'lite-single'): Promise<EngineTransport> {
   const initEngine = require('stockfish') as (flavor?: string) => Promise<{
     sendCommand(command: string): void
@@ -593,9 +593,9 @@ export async function createNodeTransport(flavor = 'lite-single'): Promise<Engin
 }
 ```
 
-- [ ] **Step 4: Написать смоук-тест на Node-транспорт**
+- [ ] **Step 4: Write a smoke test for the Node transport**
 
-Он доказывает, что транспорт действительно говорит с движком, ещё до того, как появится `engine.ts`.
+It proves the transport really talks to the engine, before `engine.ts` even exists.
 
 `src/engine/transport.node.test.ts`:
 
@@ -622,10 +622,10 @@ it('sends commands to the engine and receives its output', async () => {
 })
 ```
 
-- [ ] **Step 5: Запустить тест, убедиться что проходит**
+- [ ] **Step 5: Run the test, confirm it passes**
 
 Run: `npx vitest run src/engine/transport.node.test.ts`
-Expected: PASS, 1 test. Занимает несколько секунд — грузится 7 МБ WASM.
+Expected: PASS, 1 test. It takes a few seconds — 7 MB of WASM is loading.
 
 - [ ] **Step 6: Commit**
 
@@ -637,22 +637,22 @@ git push
 
 ---
 
-### Task 4: Публичный интерфейс движка
+### Task 4: The engine's public interface
 
-Здесь живёт вся сложность прерывания поиска. Ошибка тут проявится как «оценка от предыдущей позиции» — редко и трудноуловимо.
+All the difficulty of interrupting a search lives here. A mistake shows up as "the score from the previous position" — rarely, and hard to catch.
 
 **Files:**
 - Create: `src/engine/engine.ts`
 - Test: `src/engine/engine.test.ts`
 
 **Interfaces:**
-- Consumes: `parseUciLine`, `EvalUpdate`, `UciMessage` из `./uci`; `EngineTransport` из `./transport`; `createNodeTransport` из `./transport.node` (только в тесте).
+- Consumes: `parseUciLine`, `EvalUpdate`, `UciMessage` from `./uci`; `EngineTransport` from `./transport`; `createNodeTransport` from `./transport.node` (in the test only).
 - Produces:
   - `type AnalyzeOptions = { depth: number; multiPV: number; chess960: boolean }`
   - `interface Engine { analyze(fen: string, options: AnalyzeOptions): AsyncIterable<EvalUpdate>; stop(): void; terminate(): void }`
   - `function createEngine(transport: EngineTransport): Engine`
 
-- [ ] **Step 1: Написать падающий тест**
+- [ ] **Step 1: Write a failing test**
 
 `src/engine/engine.test.ts`:
 
@@ -699,10 +699,10 @@ it('reports the requested number of variations', async () => {
 it('never leaks updates from an abandoned search into the next one', async () => {
   engine = createEngine(await createNodeTransport())
 
-  // Бросаем глубокий анализ стартовой позиции после первого же апдейта.
+  // Abandon a deep search of the starting position after the very first update.
   for await (const _ of engine.analyze(START, { depth: 30, multiPV: 1, chess960: false })) break
 
-  // Следующий анализ обязан говорить только про новую позицию.
+  // The next analysis must speak only about the new position.
   const updates = await collect(engine.analyze(MATE_IN_ONE, { depth: 10, multiPV: 1, chess960: false }))
   expect(updates.at(-1)!.score).toEqual({ type: 'mate', value: 1 })
   expect(updates.every((update) => update.pv[0] === 'a1a8')).toBe(true)
@@ -716,18 +716,18 @@ it('stop() ends the current search early', async () => {
   setTimeout(() => engine!.stop(), 300)
   for await (const update of iterable) updates.push(update)
 
-  // Поиск на глубину 40 занял бы минуты; он завершился, значит stop сработал.
+  // A depth-40 search would take minutes; it finished, so stop worked.
   expect(updates.length).toBeGreaterThan(0)
   expect(updates.at(-1)!.depth).toBeLessThan(40)
 })
 ```
 
-- [ ] **Step 2: Запустить тест, убедиться что падает**
+- [ ] **Step 2: Run the test, confirm it fails**
 
 Run: `npx vitest run src/engine/engine.test.ts`
 Expected: FAIL — `Failed to resolve import "./engine"`.
 
-- [ ] **Step 3: Написать реализацию**
+- [ ] **Step 3: Write the implementation**
 
 `src/engine/engine.ts`:
 
@@ -759,8 +759,8 @@ export function createEngine(transport: EngineTransport): Engine {
 
   transport.send('uci')
 
-  // Поиски выполняются строго по одному. Каждый следующий ждёт, пока предыдущий
-  // не увидит свой bestmove — иначе движок ответит на старую позицию.
+  // Searches run strictly one at a time. Each next one waits until the previous
+  // has seen its bestmove — otherwise the engine answers about the old position.
   let previousSearch: Promise<void> = Promise.resolve()
   let searchActive = false
 
@@ -819,8 +819,8 @@ export function createEngine(transport: EngineTransport): Engine {
         })
       }
     } finally {
-      // Сюда попадаем и при нормальном завершении, и когда потребитель
-      // прервал цикл через break. Во втором случае движок ещё думает.
+      // Reached both on normal completion and when the consumer broke out of the
+      // loop. In the second case the engine is still thinking.
       if (!bestmoveSeen) transport.send('stop')
       await bestmove
       subscribers.delete(subscriber)
@@ -840,14 +840,14 @@ export function createEngine(transport: EngineTransport): Engine {
 }
 ```
 
-Разбор `finally`: генератор, покинутый через `break`, получает вызов `return()`, который исполняет `finally` и ждёт его завершения. Поэтому `await bestmove` внутри `finally` гарантирует, что мы не отдадим управление следующему `analyze`, пока движок не подтвердит остановку.
+About that `finally`: a generator abandoned through `break` receives a `return()` call, which runs the `finally` and waits for it to complete. So `await bestmove` inside `finally` guarantees we do not hand control to the next `analyze` until the engine confirms it has stopped.
 
-- [ ] **Step 4: Запустить тесты, убедиться что проходят**
+- [ ] **Step 4: Run the tests, confirm they pass**
 
 Run: `npx vitest run src/engine/engine.test.ts`
 Expected: PASS, 4 tests.
 
-Если тест «never leaks updates» падает с оценкой не `mate 1` — значит `finally` не дожидается `bestmove`, и движок отвечает на предыдущую позицию. Это ровно тот баг, ради которого тест написан.
+If the "never leaks updates" test fails with a score other than `mate 1`, then `finally` is not waiting for `bestmove` and the engine is answering about the previous position. That is exactly the bug the test was written for.
 
 - [ ] **Step 5: Commit**
 
@@ -859,7 +859,7 @@ git push
 
 ---
 
-### Task 5: Модуль партии
+### Task 5: The game module
 
 **Files:**
 - Create: `src/game/game.ts`
@@ -869,17 +869,17 @@ git push
 **Interfaces:**
 - Consumes: `chess.js`.
 - Produces:
-  - `type Square = string` (например `'e2'`)
+  - `type Square = string` (e.g. `'e2'`)
   - `type GameState = { fen: string; history: string[]; turn: 'w' | 'b'; isGameOver: boolean }`
   - `function createGame(fen?: string): Chess`
   - `function tryMove(game: Chess, from: Square, to: Square, promotion?: string): boolean`
-  - `function getState(game: Chess): GameState` — намеренно не `describe`, иначе имя столкнётся с `describe` из vitest
+  - `function getState(game: Chess): GameState` — deliberately not `describe`, or the name would collide with vitest's `describe`
   - `function isValidFen(fen: string): boolean`
-  - `function legalDests(game: Chess): Map<Square, Square[]>` — формат, который ждёт chessground
-  - `function loadPgn(pgn: string): { ok: true; game: Chess } | { ok: false; error: string }` (из `pgn.ts`)
-  - `function toPgn(game: Chess): string` (из `pgn.ts`)
+  - `function legalDests(game: Chess): Map<Square, Square[]>` — the shape chessground expects
+  - `function loadPgn(pgn: string): { ok: true; game: Chess } | { ok: false; error: string }` (from `pgn.ts`)
+  - `function toPgn(game: Chess): string` (from `pgn.ts`)
 
-- [ ] **Step 1: Написать падающий тест**
+- [ ] **Step 1: Write a failing test**
 
 `src/game/game.test.ts`:
 
@@ -945,14 +945,14 @@ describe('pgn', () => {
 })
 ```
 
-- [ ] **Step 2: Запустить тест, убедиться что падает**
+- [ ] **Step 2: Run the test, confirm it fails**
 
 Run: `npx vitest run src/game/game.test.ts`
 Expected: FAIL — `Failed to resolve import "./game"`.
 
-- [ ] **Step 3: Написать `src/game/game.ts`**
+- [ ] **Step 3: Write `src/game/game.ts`**
 
-`validateFen` — именованный экспорт `chess.js@1.4.0`, возвращает `{ ok: true }` либо `{ ok: false, error: string }`. Форма проверена на пакете; версия закреплена точно, так что дрейфа миноров не будет.
+`validateFen` is a named export of `chess.js@1.4.0` and returns `{ ok: true }` or `{ ok: false, error: string }`. The shape was verified against the package; the version is pinned exactly, so there will be no minor-version drift.
 
 ```ts
 import { Chess, validateFen } from 'chess.js'
@@ -979,8 +979,8 @@ export function tryMove(game: Chess, from: Square, to: Square, promotion = 'q'):
     game.move({ from, to, promotion })
     return true
   } catch {
-    // chess.js бросает на нелегальном ходе. Для нас это не исключительная
-    // ситуация: пользователь просто перетащил фигуру не туда.
+    // chess.js throws on an illegal move. For us that is not an exceptional
+    // situation: the user simply dragged a piece somewhere it cannot go.
     return false
   }
 }
@@ -994,7 +994,7 @@ export function getState(game: Chess): GameState {
   }
 }
 
-/** chessground ожидает Map<откуда, куда[]>. */
+/** chessground expects Map<from, to[]>. */
 export function legalDests(game: Chess): Map<Square, Square[]> {
   const dests = new Map<Square, Square[]>()
   for (const move of game.moves({ verbose: true })) {
@@ -1006,7 +1006,7 @@ export function legalDests(game: Chess): Map<Square, Square[]> {
 }
 ```
 
-- [ ] **Step 4: Написать `src/game/pgn.ts`**
+- [ ] **Step 4: Write `src/game/pgn.ts`**
 
 ```ts
 import { Chess } from 'chess.js'
@@ -1028,12 +1028,12 @@ export function toPgn(game: Chess): string {
 }
 ```
 
-- [ ] **Step 5: Запустить тесты, убедиться что проходят**
+- [ ] **Step 5: Run the tests, confirm they pass**
 
 Run: `npx vitest run src/game/game.test.ts`
 Expected: PASS, 7 tests.
 
-Порядок в `legalDests` проверен на `chess.js@1.4.0`: `e2 → ['e3','e4']`, `g1 → ['f3','h3']`. Для chessground порядок не важен, но тест зафиксирован именно такой.
+The ordering in `legalDests` was verified against `chess.js@1.4.0`: `e2 → ['e3','e4']`, `g1 → ['f3','h3']`. Order does not matter to chessground, but the test pins exactly this one.
 
 - [ ] **Step 6: Commit**
 
@@ -1045,9 +1045,9 @@ git push
 
 ---
 
-### Task 6: Компонент доски
+### Task 6: The board component
 
-Chessground — императивная библиотека. Она сама владеет своим DOM; React не должен его перерисовывать.
+Chessground is an imperative library. It owns its own DOM; React must not re-render it.
 
 **Files:**
 - Create: `src/ui/Board.tsx`
@@ -1055,13 +1055,13 @@ Chessground — императивная библиотека. Она сама �
 - Modify: `src/App.tsx`
 
 **Interfaces:**
-- Consumes: `chessground`, `legalDests` и `Square` из `src/game/game`.
+- Consumes: `chessground`, `legalDests` and `Square` from `src/game/game`.
 - Produces:
   - `type Arrow = { orig: Square; dest: Square; brush: 'green' | 'paleGreen' | 'paleGrey' }`
   - `type BoardProps = { fen: string; dests: Map<Square, Square[]>; orientation: 'white' | 'black'; turn: 'white' | 'black'; arrows?: Arrow[]; onMove: (from: Square, to: Square) => void }`
   - `function Board(props: BoardProps): JSX.Element`
 
-- [ ] **Step 1: Подключить стили chessground**
+- [ ] **Step 1: Wire up chessground's styles**
 
 `src/ui/board.css`:
 
@@ -1076,9 +1076,9 @@ Chessground — императивная библиотека. Она сама �
 }
 ```
 
-Без всех трёх файлов доска отрендерится как пустой прямоугольник: `base` задаёт геометрию, `brown` — цвет клеток, `cburnett` — фигуры.
+Without all three files the board renders as an empty rectangle: `base` sets the geometry, `brown` the square colours, `cburnett` the pieces.
 
-- [ ] **Step 2: Написать `src/ui/Board.tsx`**
+- [ ] **Step 2: Write `src/ui/Board.tsx`**
 
 ```tsx
 import { Chessground } from 'chessground'
@@ -1106,8 +1106,8 @@ export function Board({ fen, dests, orientation, turn, arrows = [], onMove }: Bo
   const element = useRef<HTMLDivElement>(null)
   const api = useRef<Api | null>(null)
 
-  // onMove пересоздаётся на каждый рендер; держим его в ref, чтобы
-  // не переинициализировать доску.
+  // onMove is recreated on every render; keep it in a ref so we do not
+  // reinitialize the board.
   const onMoveRef = useRef(onMove)
   onMoveRef.current = onMove
 
@@ -1130,7 +1130,7 @@ export function Board({ fen, dests, orientation, turn, arrows = [], onMove }: Bo
       api.current?.destroy()
       api.current = null
     }
-    // Инициализация ровно один раз. Обновления идут через api.set ниже.
+    // Initialize exactly once. Updates flow through api.set below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -1151,9 +1151,9 @@ export function Board({ fen, dests, orientation, turn, arrows = [], onMove }: Bo
 }
 ```
 
-Два разных `useEffect` — не случайность. Первый создаёт и уничтожает доску, второй синхронизирует состояние. Если слить их в один, доска будет пересоздаваться на каждый ход, теряя анимацию и фокус.
+The two separate `useEffect`s are not an accident. The first creates and destroys the board; the second synchronizes state. Merge them and the board is recreated on every move, losing its animation and focus.
 
-- [ ] **Step 3: Подключить доску в `src/App.tsx`**
+- [ ] **Step 3: Wire the board into `src/App.tsx`**
 
 ```tsx
 import { useCallback, useMemo, useState } from 'react'
@@ -1188,10 +1188,10 @@ export function App() {
 }
 ```
 
-- [ ] **Step 4: Проверить вручную**
+- [ ] **Step 4: Check by hand**
 
 Run: `npm run dev`
-Expected: доска отрисована с фигурами. Пешку `e2` можно перетащить на `e3` или `e4`, но не на `e5`. После хода белых ходят чёрные.
+Expected: the board renders with pieces. The `e2` pawn can be dragged to `e3` or `e4`, but not to `e5`. After White's move it is Black's turn.
 
 - [ ] **Step 5: Commit**
 
@@ -1203,9 +1203,9 @@ git push
 
 ---
 
-### Task 7: Мост движок → React и живая оценка
+### Task 7: The engine → React bridge and live evaluation
 
-Первый момент, когда все части соединяются.
+The first moment when all the parts meet.
 
 **Files:**
 - Create: `src/hooks/useAnalysis.ts`
@@ -1213,27 +1213,27 @@ git push
 - Create: `src/ui/LineList.tsx`
 - Test: `src/ui/EvalBar.test.tsx`
 - Modify: `src/App.tsx`
-- Modify: `package.json` (добавить `jsdom`, `@testing-library/react`)
+- Modify: `package.json` (add `jsdom`, `@testing-library/react`)
 
 **Interfaces:**
-- Consumes: `createEngine`, `AnalyzeOptions` из `src/engine/engine`; `createWorkerTransport`, `isMultiThreaded` из `src/engine/transport`; `EvalUpdate` из `src/engine/uci`.
+- Consumes: `createEngine`, `AnalyzeOptions` from `src/engine/engine`; `createWorkerTransport`, `isMultiThreaded` from `src/engine/transport`; `EvalUpdate` from `src/engine/uci`.
 - Produces:
   - `type AnalysisState = { lines: EvalUpdate[]; depth: number; stale: boolean; multiThreaded: boolean }`
   - `function useAnalysis(fen: string, options: AnalyzeOptions): AnalysisState`
   - `function EvalBar(props: { score: Score | null; orientation: 'white' | 'black' }): JSX.Element`
-  - `function formatScore(score: Score): string` (экспортируется из `EvalBar.tsx`)
-  - `function whiteWinProbability(score: Score): number` (экспортируется из `EvalBar.tsx`)
+  - `function formatScore(score: Score): string` (exported from `EvalBar.tsx`)
+  - `function whiteWinProbability(score: Score): number` (exported from `EvalBar.tsx`)
   - `function LineList(props: { lines: EvalUpdate[] }): JSX.Element`
 
-- [ ] **Step 1: Установить зависимости для компонентных тестов**
+- [ ] **Step 1: Install the dependencies for component tests**
 
 ```bash
 npm i -D jsdom @testing-library/react @testing-library/jest-dom
 ```
 
-- [ ] **Step 2: Написать падающий тест на `EvalBar`**
+- [ ] **Step 2: Write a failing test for `EvalBar`**
 
-Знак оценки — самая частая ошибка в анализаторах. UCI всегда даёт оценку **с точки зрения стороны, которая ходит**. Бар показывает оценку **с точки зрения белых**. Перевод обязан учитывать очередь хода, поэтому `formatScore` работает уже с нормализованной оценкой, а нормализацию делает `useAnalysis`.
+The score's sign is the most common bug in analyzers. UCI always gives the score **from the point of view of the side to move**. The bar shows the score **from White's point of view**. The conversion must account for whose turn it is, so `formatScore` works on an already-normalized score, and `useAnalysis` does the normalizing.
 
 `src/ui/EvalBar.test.tsx`:
 
@@ -1273,25 +1273,25 @@ it('renders the score text', () => {
 })
 ```
 
-Добавить `src/test-setup.ts`:
+Add `src/test-setup.ts`:
 
 ```ts
 import '@testing-library/jest-dom/vitest'
 ```
 
-и в `vite.config.ts` в блок `test` добавить `setupFiles: ['./src/test-setup.ts']`.
+and add `setupFiles: ['./src/test-setup.ts']` to the `test` block of `vite.config.ts`.
 
-- [ ] **Step 3: Запустить тест, убедиться что падает**
+- [ ] **Step 3: Run the test, confirm it fails**
 
 Run: `npx vitest run src/ui/EvalBar.test.tsx`
 Expected: FAIL — `Failed to resolve import "./EvalBar"`.
 
-- [ ] **Step 4: Написать `src/ui/EvalBar.tsx`**
+- [ ] **Step 4: Write `src/ui/EvalBar.tsx`**
 
 ```tsx
 import type { Score } from '../engine/uci'
 
-/** Логистическая кривая: 400 сантипешек ≈ 76% ожидаемого результата. */
+/** A logistic curve: 400 centipawns ≈ 76% expected score. */
 export function whiteWinProbability(score: Score): number {
   if (score.type === 'mate') return score.value > 0 ? 1 : 0
   return 1 / (1 + Math.pow(10, -score.value / 400))
@@ -1340,7 +1340,7 @@ export function EvalBar({ score, orientation }: { score: Score | null; orientati
 }
 ```
 
-- [ ] **Step 5: Запустить тест, убедиться что проходит**
+- [ ] **Step 5: Run the test, confirm it passes**
 
 Run: `npx vitest run src/ui/EvalBar.test.tsx`
 Expected: PASS, 5 tests.
@@ -1353,7 +1353,7 @@ git commit -m "feat(ui): add eval bar with score formatting"
 git push
 ```
 
-- [ ] **Step 7: Написать `src/hooks/useAnalysis.ts`**
+- [ ] **Step 7: Write `src/hooks/useAnalysis.ts`**
 
 ```ts
 import { useEffect, useRef, useState } from 'react'
@@ -1370,7 +1370,7 @@ export type AnalysisState = {
 
 const THROTTLE_MS = 100
 
-/** UCI отдаёт оценку от лица стороны, которая ходит. Бару нужна оценка от лица белых. */
+/** UCI reports the score from the side to move's point of view. The bar needs White's. */
 function toWhitePerspective(score: Score, blackToMove: boolean): Score {
   return blackToMove ? { type: score.type, value: -score.value } : score
 }
@@ -1397,8 +1397,8 @@ export function useAnalysis(fen: string, options: AnalyzeOptions): AnalysisState
     let cancelled = false
     setStale(true)
 
-    // Апдейты от движка приходят сотнями в секунду; копим их и отдаём React
-    // не чаще, чем раз в THROTTLE_MS.
+    // The engine emits hundreds of updates per second; accumulate them and hand
+    // them to React no more often than once every THROTTLE_MS.
     const pending = new Map<number, EvalUpdate>()
     let flushTimer: ReturnType<typeof setInterval> | null = null
 
@@ -1438,16 +1438,16 @@ export function useAnalysis(fen: string, options: AnalyzeOptions): AnalysisState
 }
 ```
 
-`cancelled = true` заставляет цикл `for await` выйти через `break`, что запускает `finally` внутри `analyze` и корректно останавливает движок. `engine.stop()` в клинапе лишь ускоряет этот процесс, посылая `stop` немедленно.
+`cancelled = true` makes the `for await` loop exit through `break`, which runs the `finally` inside `analyze` and stops the engine properly. The `engine.stop()` in the cleanup merely speeds that up by sending `stop` immediately.
 
-- [ ] **Step 8: Написать `src/ui/LineList.tsx`**
+- [ ] **Step 8: Write `src/ui/LineList.tsx`**
 
 ```tsx
 import type { EvalUpdate } from '../engine/uci'
 import { formatScore } from './EvalBar'
 
 export function LineList({ lines }: { lines: EvalUpdate[] }) {
-  if (lines.length === 0) return <p>Анализ…</p>
+  if (lines.length === 0) return <p>Analyzing…</p>
 
   return (
     <ol className="line-list">
@@ -1461,7 +1461,7 @@ export function LineList({ lines }: { lines: EvalUpdate[] }) {
 }
 ```
 
-- [ ] **Step 9: Соединить всё в `src/App.tsx`**
+- [ ] **Step 9: Wire it all together in `src/App.tsx`**
 
 ```tsx
 import { useCallback, useMemo, useState } from 'react'
@@ -1494,8 +1494,8 @@ export function App() {
       <h1>Chess Analyzer</h1>
       {!analysis.multiThreaded && (
         <p role="alert">
-          Многопоточный движок недоступен (нет cross-origin isolation). Работает медленная
-          однопоточная сборка.
+          The multi-threaded engine is unavailable (no cross-origin isolation). The slower
+          single-threaded build is running.
         </p>
       )}
       <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
@@ -1508,7 +1508,7 @@ export function App() {
           onMove={onMove}
         />
         <div style={{ opacity: analysis.stale ? 0.5 : 1 }}>
-          <p>Глубина: {analysis.depth}</p>
+          <p>Depth: {analysis.depth}</p>
           <LineList lines={analysis.lines} />
         </div>
       </div>
@@ -1517,17 +1517,17 @@ export function App() {
 }
 ```
 
-Приглушение через `opacity` вместо очистки списка — иначе панель мигает пустотой на каждом ходу.
+Dimming through `opacity` rather than clearing the list: otherwise the panel blinks empty on every move.
 
-- [ ] **Step 10: Проверить вручную**
+- [ ] **Step 10: Check by hand**
 
 Run: `npm run dev`
 Expected:
-- Предупреждения про однопоточность нет.
-- На стартовой позиции оценка около `+0.20`, глубина растёт до 18 и останавливается.
-- Три варианта в списке.
-- После хода `1.e4` оценка пересчитывается, список обновляется.
-- Сыграть `1.f3 e5 2.g4` — оценка обязана показать `-M1` (мат `d8h4`), а не `M1`. Если знак перевёрнут, сломан `toWhitePerspective`.
+- No single-threaded warning.
+- On the starting position the score is around `+0.20`; the depth climbs to 18 and stops.
+- Three lines in the list.
+- After `1.e4` the score is recomputed and the list refreshes.
+- Play `1.f3 e5 2.g4` — the score must read `-M1` (mate by `d8h4`), not `M1`. If the sign is flipped, `toWhitePerspective` is broken.
 
 - [ ] **Step 11: Commit**
 
@@ -1539,7 +1539,7 @@ git push
 
 ---
 
-### Task 8: Стрелки лучших ходов
+### Task 8: Best-move arrows
 
 **Files:**
 - Modify: `src/App.tsx`
@@ -1547,10 +1547,10 @@ git push
 - Test: `src/ui/arrows.test.ts`
 
 **Interfaces:**
-- Consumes: `EvalUpdate` из `src/engine/uci`; `Arrow` из `src/ui/Board`.
+- Consumes: `EvalUpdate` from `src/engine/uci`; `Arrow` from `src/ui/Board`.
 - Produces: `function linesToArrows(lines: EvalUpdate[]): Arrow[]`
 
-- [ ] **Step 1: Написать падающий тест**
+- [ ] **Step 1: Write a failing test**
 
 `src/ui/arrows.test.ts`:
 
@@ -1588,14 +1588,14 @@ it('returns nothing for no lines', () => {
 })
 ```
 
-- [ ] **Step 2: Запустить тест, убедиться что падает**
+- [ ] **Step 2: Run the test, confirm it fails**
 
 Run: `npx vitest run src/ui/arrows.test.ts`
 Expected: FAIL — `Failed to resolve import "./arrows"`.
 
-- [ ] **Step 3: Написать `src/ui/arrows.ts`**
+- [ ] **Step 3: Write `src/ui/arrows.ts`**
 
-Кисти `green`, `paleGreen` и `paleGrey` входят в набор по умолчанию `chessground@9.2.1` (см. `dist/state.js`, `defaults().drawable.brushes`: `green, red, blue, yellow, paleBlue, paleGreen, paleRed, paleGrey, purple, pink, white`). Конфиг мержится поверх дефолтов, поэтому регистрировать их через `drawable.brushes` не нужно.
+The `green`, `paleGreen` and `paleGrey` brushes are part of `chessground@9.2.1`'s default set (see `dist/state.js`, `defaults().drawable.brushes`: `green, red, blue, yellow, paleBlue, paleGreen, paleRed, paleGrey, purple, pink, white`). The config is merged on top of the defaults, so registering them through `drawable.brushes` is unnecessary.
 
 ```ts
 import type { EvalUpdate } from '../engine/uci'
@@ -1618,27 +1618,27 @@ export function linesToArrows(lines: EvalUpdate[]): Arrow[] {
 }
 ```
 
-Ход в UCI-формате — это `e2e4`, а при превращении `e7e8q`. Поэтому `slice(2, 4)`, а не `slice(2)`.
+A UCI move is `e2e4`, or `e7e8q` on a promotion. Hence `slice(2, 4)`, not `slice(2)`.
 
-- [ ] **Step 4: Запустить тест, убедиться что проходит**
+- [ ] **Step 4: Run the test, confirm it passes**
 
 Run: `npx vitest run src/ui/arrows.test.ts`
 Expected: PASS, 4 tests.
 
-- [ ] **Step 5: Передать стрелки в доску**
+- [ ] **Step 5: Pass the arrows to the board**
 
-В `src/App.tsx` добавить импорт `import { linesToArrows } from './ui/arrows'`, вычислить
+In `src/App.tsx` add the import `import { linesToArrows } from './ui/arrows'`, compute
 
 ```tsx
 const arrows = useMemo(() => linesToArrows(analysis.lines), [analysis.lines])
 ```
 
-и передать в `<Board ... arrows={arrows} />`.
+and pass it as `<Board ... arrows={arrows} />`.
 
-- [ ] **Step 6: Проверить вручную**
+- [ ] **Step 6: Check by hand**
 
 Run: `npm run dev`
-Expected: на стартовой позиции три стрелки — яркая зелёная на первом варианте, две бледные на остальных. При ходе стрелки перерисовываются.
+Expected: three arrows on the starting position — a bright green one on the first line and two pale ones on the rest. Making a move redraws the arrows.
 
 - [ ] **Step 7: Commit**
 
@@ -1650,7 +1650,7 @@ git push
 
 ---
 
-### Task 9: Ввод FEN и PGN
+### Task 9: FEN and PGN input
 
 **Files:**
 - Create: `src/ui/PositionInput.tsx`
@@ -1658,12 +1658,12 @@ git push
 - Modify: `src/App.tsx`
 
 **Interfaces:**
-- Consumes: `isValidFen`, `createGame` из `src/game/game`; `loadPgn` из `src/game/pgn`.
+- Consumes: `isValidFen`, `createGame` from `src/game/game`; `loadPgn` from `src/game/pgn`.
 - Produces:
   - `type PositionInputProps = { onLoad: (game: Chess) => void }`
   - `function PositionInput(props: PositionInputProps): JSX.Element`
 
-- [ ] **Step 1: Написать падающий тест**
+- [ ] **Step 1: Write a failing test**
 
 `src/ui/PositionInput.test.tsx`:
 
@@ -1681,7 +1681,7 @@ it('loads a valid FEN', async () => {
   render(<PositionInput onLoad={onLoad} />)
 
   await userEvent.type(screen.getByLabelText('FEN'), MATE_IN_ONE)
-  await userEvent.click(screen.getByRole('button', { name: 'Загрузить FEN' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Load FEN' }))
 
   expect(onLoad).toHaveBeenCalledTimes(1)
   expect(onLoad.mock.calls[0][0].fen()).toBe(MATE_IN_ONE)
@@ -1692,9 +1692,9 @@ it('shows an error for an invalid FEN and does not load it', async () => {
   render(<PositionInput onLoad={onLoad} />)
 
   await userEvent.type(screen.getByLabelText('FEN'), 'garbage')
-  await userEvent.click(screen.getByRole('button', { name: 'Загрузить FEN' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Load FEN' }))
 
-  expect(screen.getByRole('alert')).toHaveTextContent('Некорректный FEN')
+  expect(screen.getByRole('alert')).toHaveTextContent('Invalid FEN')
   expect(onLoad).not.toHaveBeenCalled()
 })
 
@@ -1703,7 +1703,7 @@ it('loads a valid PGN', async () => {
   render(<PositionInput onLoad={onLoad} />)
 
   await userEvent.type(screen.getByLabelText('PGN'), '1. e4 e5 2. Nf3')
-  await userEvent.click(screen.getByRole('button', { name: 'Загрузить PGN' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Load PGN' }))
 
   expect(onLoad).toHaveBeenCalledTimes(1)
   expect(onLoad.mock.calls[0][0].history()).toEqual(['e4', 'e5', 'Nf3'])
@@ -1714,25 +1714,25 @@ it('shows an error for an unparsable PGN', async () => {
   render(<PositionInput onLoad={onLoad} />)
 
   await userEvent.type(screen.getByLabelText('PGN'), '1. Qxq9 ##')
-  await userEvent.click(screen.getByRole('button', { name: 'Загрузить PGN' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Load PGN' }))
 
   expect(screen.getByRole('alert')).toBeInTheDocument()
   expect(onLoad).not.toHaveBeenCalled()
 })
 ```
 
-Установить `@testing-library/user-event`:
+Install `@testing-library/user-event`:
 
 ```bash
 npm i -D @testing-library/user-event
 ```
 
-- [ ] **Step 2: Запустить тест, убедиться что падает**
+- [ ] **Step 2: Run the test, confirm it fails**
 
 Run: `npx vitest run src/ui/PositionInput.test.tsx`
 Expected: FAIL — `Failed to resolve import "./PositionInput"`.
 
-- [ ] **Step 3: Написать `src/ui/PositionInput.tsx`**
+- [ ] **Step 3: Write `src/ui/PositionInput.tsx`**
 
 ```tsx
 import type { Chess } from 'chess.js'
@@ -1751,7 +1751,7 @@ export function PositionInput({ onLoad }: PositionInputProps) {
 
   const submitFen = () => {
     if (!isValidFen(fen.trim())) {
-      setError('Некорректный FEN')
+      setError('Invalid FEN')
       return
     }
     setError(null)
@@ -1761,7 +1761,7 @@ export function PositionInput({ onLoad }: PositionInputProps) {
   const submitPgn = () => {
     const result = loadPgn(pgn.trim())
     if (!result.ok) {
-      setError(`Не удалось разобрать PGN: ${result.error}`)
+      setError(`Could not parse PGN: ${result.error}`)
       return
     }
     setError(null)
@@ -1773,13 +1773,13 @@ export function PositionInput({ onLoad }: PositionInputProps) {
       <label htmlFor="fen-input">FEN</label>
       <input id="fen-input" value={fen} onChange={(event) => setFen(event.target.value)} />
       <button type="button" onClick={submitFen}>
-        Загрузить FEN
+        Load FEN
       </button>
 
       <label htmlFor="pgn-input">PGN</label>
       <textarea id="pgn-input" rows={4} value={pgn} onChange={(event) => setPgn(event.target.value)} />
       <button type="button" onClick={submitPgn}>
-        Загрузить PGN
+        Load PGN
       </button>
 
       {error && <p role="alert">{error}</p>}
@@ -1788,14 +1788,14 @@ export function PositionInput({ onLoad }: PositionInputProps) {
 }
 ```
 
-- [ ] **Step 4: Запустить тест, убедиться что проходит**
+- [ ] **Step 4: Run the test, confirm it passes**
 
 Run: `npx vitest run src/ui/PositionInput.test.tsx`
 Expected: PASS, 4 tests.
 
-- [ ] **Step 5: Подключить в `src/App.tsx`**
+- [ ] **Step 5: Wire it into `src/App.tsx`**
 
-Заменить `const [game] = useState(...)` на изменяемое состояние, потому что загрузка позиции подменяет объект партии целиком:
+Replace `const [game] = useState(...)` with mutable state, because loading a position swaps out the whole game object:
 
 ```tsx
 const [game, setGame] = useState(() => createGame())
@@ -1807,12 +1807,12 @@ const loadGame = useCallback((next: Chess) => {
 }, [])
 ```
 
-и отрендерить `<PositionInput onLoad={loadGame} />` под доской. Не забыть `import type { Chess } from 'chess.js'`.
+and render `<PositionInput onLoad={loadGame} />` below the board. Remember `import type { Chess } from 'chess.js'`.
 
-- [ ] **Step 6: Проверить вручную**
+- [ ] **Step 6: Check by hand**
 
 Run: `npm run dev`
-Expected: вставка FEN `6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1` показывает позицию, оценку `M1` и зелёную стрелку `a1 → a8`. Ввод `garbage` показывает ошибку и не меняет доску.
+Expected: pasting the FEN `6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1` shows the position, a score of `M1` and a green `a1 → a8` arrow. Typing `garbage` shows an error and does not change the board.
 
 - [ ] **Step 7: Commit**
 
@@ -1824,7 +1824,7 @@ git push
 
 ---
 
-### Task 10: Настройки анализа
+### Task 10: Analysis settings
 
 **Files:**
 - Create: `src/hooks/useSettings.ts`
@@ -1833,13 +1833,13 @@ git push
 - Modify: `src/App.tsx`
 
 **Interfaces:**
-- Consumes: `AnalyzeOptions` из `src/engine/engine`.
+- Consumes: `AnalyzeOptions` from `src/engine/engine`.
 - Produces:
   - `const DEFAULT_SETTINGS: AnalyzeOptions`
   - `function useSettings(): [AnalyzeOptions, (patch: Partial<AnalyzeOptions>) => void]`
   - `function SettingsPanel(props: { settings: AnalyzeOptions; onChange: (patch: Partial<AnalyzeOptions>) => void }): JSX.Element`
 
-- [ ] **Step 1: Написать падающий тест**
+- [ ] **Step 1: Write a failing test**
 
 `src/hooks/useSettings.test.ts`:
 
@@ -1883,12 +1883,12 @@ it('clamps out-of-range values from storage', () => {
 })
 ```
 
-- [ ] **Step 2: Запустить тест, убедиться что падает**
+- [ ] **Step 2: Run the test, confirm it fails**
 
 Run: `npx vitest run src/hooks/useSettings.test.ts`
 Expected: FAIL — `Failed to resolve import "./useSettings"`.
 
-- [ ] **Step 3: Написать `src/hooks/useSettings.ts`**
+- [ ] **Step 3: Write `src/hooks/useSettings.ts`**
 
 ```ts
 import { useCallback, useState } from 'react'
@@ -1930,7 +1930,7 @@ function read(): AnalyzeOptions {
     const stored = localStorage.getItem(STORAGE_KEY)
     return stored ? sanitize(JSON.parse(stored)) : DEFAULT_SETTINGS
   } catch {
-    // Битый JSON или недоступное хранилище — не повод падать.
+    // Corrupt JSON or unreachable storage — no reason to crash.
     return DEFAULT_SETTINGS
   }
 }
@@ -1944,7 +1944,7 @@ export function useSettings(): [AnalyzeOptions, (patch: Partial<AnalyzeOptions>)
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
       } catch {
-        // Приватный режим браузера. Настройки просто не переживут перезагрузку.
+        // The browser's private mode. The settings simply will not survive a reload.
       }
       return next
     })
@@ -1954,12 +1954,12 @@ export function useSettings(): [AnalyzeOptions, (patch: Partial<AnalyzeOptions>)
 }
 ```
 
-- [ ] **Step 4: Запустить тест, убедиться что проходит**
+- [ ] **Step 4: Run the test, confirm it passes**
 
 Run: `npx vitest run src/hooks/useSettings.test.ts`
 Expected: PASS, 5 tests.
 
-- [ ] **Step 5: Написать `src/ui/SettingsPanel.tsx`**
+- [ ] **Step 5: Write `src/ui/SettingsPanel.tsx`**
 
 ```tsx
 import type { AnalyzeOptions } from '../engine/engine'
@@ -1973,7 +1973,7 @@ export function SettingsPanel({
 }) {
   return (
     <section className="settings">
-      <label htmlFor="depth">Глубина: {settings.depth}</label>
+      <label htmlFor="depth">Depth: {settings.depth}</label>
       <input
         id="depth"
         type="range"
@@ -1983,7 +1983,7 @@ export function SettingsPanel({
         onChange={(event) => onChange({ depth: Number(event.target.value) })}
       />
 
-      <label htmlFor="multipv">Вариантов: {settings.multiPV}</label>
+      <label htmlFor="multipv">Variations: {settings.multiPV}</label>
       <input
         id="multipv"
         type="range"
@@ -1997,34 +1997,34 @@ export function SettingsPanel({
 }
 ```
 
-- [ ] **Step 6: Подключить в `src/App.tsx`**
+- [ ] **Step 6: Wire it into `src/App.tsx`**
 
-Удалить константу `OPTIONS` целиком. Добавить импорты:
+Delete the `OPTIONS` constant entirely. Add the imports:
 
 ```tsx
 import { useSettings } from './hooks/useSettings'
 import { SettingsPanel } from './ui/SettingsPanel'
 ```
 
-Заменить строку `const analysis = useAnalysis(state.fen, OPTIONS)` на две:
+Replace the line `const analysis = useAnalysis(state.fen, OPTIONS)` with two:
 
 ```tsx
 const [settings, updateSettings] = useSettings()
 const analysis = useAnalysis(state.fen, settings)
 ```
 
-И отрендерить панель в правой колонке, над `<LineList>`:
+And render the panel in the right column, above `<LineList>`:
 
 ```tsx
 <SettingsPanel settings={settings} onChange={updateSettings} />
 ```
 
-`useSettings` возвращает новый объект только при изменении, а `useAnalysis` зависит от полей `settings`, а не от ссылки на объект, поэтому лишних перезапусков анализа не будет.
+`useSettings` returns a new object only on a change, and `useAnalysis` depends on the fields of `settings` rather than on the object reference, so there will be no needless analysis restarts.
 
-- [ ] **Step 7: Проверить вручную**
+- [ ] **Step 7: Check by hand**
 
 Run: `npm run dev`
-Expected: изменение глубины перезапускает анализ; изменение числа вариантов меняет длину списка и количество стрелок; после перезагрузки страницы значения сохраняются.
+Expected: changing the depth restarts the analysis; changing the number of variations changes the list's length and the number of arrows; the values survive a page reload.
 
 - [ ] **Step 8: Commit**
 
@@ -2036,9 +2036,9 @@ git push
 
 ---
 
-### Task 11: Восстановление после падения воркера
+### Task 11: Recovering from a worker crash
 
-Спек требует: при падении воркера перезапустить его и повторить последний запрос один раз, дальше — сообщение.
+The spec requires: when the worker crashes, restart it and retry the last request once; after that, show a message.
 
 **Files:**
 - Modify: `src/engine/transport.ts`
@@ -2046,12 +2046,12 @@ git push
 - Test: `src/engine/transport.test.ts`
 
 **Interfaces:**
-- Consumes: `EngineTransport` из `./transport`.
+- Consumes: `EngineTransport` from `./transport`.
 - Produces:
-  - `createWorkerTransport(scriptUrl?: string, onError?: (error: unknown) => void): EngineTransport` — расширенная сигнатура
-  - `AnalysisState` получает новое поле: `error: string | null`
+  - `createWorkerTransport(scriptUrl?: string, onError?: (error: unknown) => void): EngineTransport` — an extended signature
+  - `AnalysisState` gains a new field: `error: string | null`
 
-- [ ] **Step 1: Написать падающий тест на проброс ошибки**
+- [ ] **Step 1: Write a failing test for error forwarding**
 
 `src/engine/transport.test.ts`:
 
@@ -2095,14 +2095,14 @@ it('forwards only string messages to the line handler', () => {
 })
 ```
 
-- [ ] **Step 2: Запустить тест, убедиться что падает**
+- [ ] **Step 2: Run the test, confirm it fails**
 
 Run: `npx vitest run src/engine/transport.test.ts`
-Expected: FAIL — `createWorkerTransport` принимает один аргумент, `onError` не вызывается.
+Expected: FAIL — `createWorkerTransport` takes one argument and `onError` is never called.
 
-- [ ] **Step 3: Расширить `createWorkerTransport`**
+- [ ] **Step 3: Extend `createWorkerTransport`**
 
-В `src/engine/transport.ts` заменить функцию на:
+In `src/engine/transport.ts`, replace the function with:
 
 ```ts
 export function createWorkerTransport(
@@ -2127,16 +2127,16 @@ export function createWorkerTransport(
 }
 ```
 
-- [ ] **Step 4: Запустить тест, убедиться что проходит**
+- [ ] **Step 4: Run the test, confirm it passes**
 
 Run: `npx vitest run src/engine/transport.test.ts`
 Expected: PASS, 2 tests.
 
-- [ ] **Step 5: Обработать падение в `useAnalysis`**
+- [ ] **Step 5: Handle the crash in `useAnalysis`**
 
-В `src/hooks/useAnalysis.ts`: добавить в `AnalysisState` поле `error: string | null`, завести `const [error, setError] = useState<string | null>(null)` и счётчик перезапусков в ref.
+In `src/hooks/useAnalysis.ts`: add an `error: string | null` field to `AnalysisState`, declare `const [error, setError] = useState<string | null>(null)`, and keep a restart counter in a ref.
 
-Заменить эффект создания движка на:
+Replace the engine-creating effect with:
 
 ```ts
 const restarts = useRef(0)
@@ -2145,7 +2145,7 @@ const [engineGeneration, setEngineGeneration] = useState(0)
 useEffect(() => {
   const handleError = () => {
     if (restarts.current >= 1) {
-      setError('Движок аварийно завершился. Перезагрузите страницу.')
+      setError('The engine crashed. Reload the page.')
       return
     }
     restarts.current += 1
@@ -2160,24 +2160,24 @@ useEffect(() => {
 }, [engineGeneration])
 ```
 
-Смена `engineGeneration` пересоздаёт движок, а эффект анализа перезапускается, потому что `engineRef.current` меняется — добавьте `engineGeneration` в массив зависимостей эффекта анализа. Это и есть «повторить последний запрос один раз».
+Changing `engineGeneration` recreates the engine, and the analysis effect restarts because `engineRef.current` changed — add `engineGeneration` to that effect's dependency array. That is what "retry the last request once" means.
 
-Вернуть `error` из хука.
+Return `error` from the hook.
 
-- [ ] **Step 6: Показать ошибку в `src/App.tsx`**
+- [ ] **Step 6: Show the error in `src/App.tsx`**
 
-Под предупреждением про однопоточность добавить:
+Below the single-threaded warning, add:
 
 ```tsx
 {analysis.error && <p role="alert">{analysis.error}</p>}
 ```
 
-- [ ] **Step 7: Проверить вручную**
+- [ ] **Step 7: Check by hand**
 
 Run: `npm run dev`
 
-В консоли браузера убить воркер: временно поменять `MULTI_THREADED` на несуществующий путь `/stockfish/nope.js`, перезагрузить.
-Expected: движок перезапускается один раз, затем появляется сообщение «Движок аварийно завершился». Вернуть путь обратно.
+Kill the worker from the browser console: temporarily point `MULTI_THREADED` at a nonexistent path, `/stockfish/nope.js`, and reload.
+Expected: the engine restarts once, then the message "The engine crashed" appears. Put the path back.
 
 - [ ] **Step 8: Commit**
 
@@ -2189,9 +2189,9 @@ git push
 
 ---
 
-### Task 12: Просмотр варианта кликом по ходу
+### Task 12: Previewing a line by clicking its moves
 
-Спек: «клик по ходу в цепочке проматывает доску на эту позицию, не разрушая основную партию».
+Spec: "clicking a move in the chain scrolls the board to that position without destroying the main game."
 
 **Files:**
 - Create: `src/game/preview.ts`
@@ -2202,10 +2202,10 @@ git push
 **Interfaces:**
 - Consumes: `chess.js`.
 - Produces:
-  - `function previewFen(baseFen: string, uciMoves: string[]): string | null` — `null`, если ходы нелегальны в этой позиции
-  - `LineList` получает новый проп: `onSelect: (line: EvalUpdate, plyCount: number) => void`
+  - `function previewFen(baseFen: string, uciMoves: string[]): string | null` — `null` if the moves are illegal in that position
+  - `LineList` gains a new prop: `onSelect: (line: EvalUpdate, plyCount: number) => void`
 
-- [ ] **Step 1: Написать падающий тест**
+- [ ] **Step 1: Write a failing test**
 
 `src/game/preview.test.ts`:
 
@@ -2245,19 +2245,19 @@ it('returns null for an invalid base position', () => {
 })
 ```
 
-- [ ] **Step 2: Запустить тест, убедиться что падает**
+- [ ] **Step 2: Run the test, confirm it fails**
 
 Run: `npx vitest run src/game/preview.test.ts`
 Expected: FAIL — `Failed to resolve import "./preview"`.
 
-- [ ] **Step 3: Написать `src/game/preview.ts`**
+- [ ] **Step 3: Write `src/game/preview.ts`**
 
 ```ts
 import { Chess } from 'chess.js'
 
 /**
- * Проигрывает UCI-ходы от базовой позиции и возвращает получившийся FEN.
- * Ничего не мутирует: работает на своём экземпляре Chess.
+ * Replays UCI moves from a base position and returns the resulting FEN.
+ * Mutates nothing: it works on its own Chess instance.
  */
 export function previewFen(baseFen: string, uciMoves: string[]): string | null {
   try {
@@ -2276,14 +2276,14 @@ export function previewFen(baseFen: string, uciMoves: string[]): string | null {
 }
 ```
 
-- [ ] **Step 4: Запустить тест, убедиться что проходит**
+- [ ] **Step 4: Run the test, confirm it passes**
 
 Run: `npx vitest run src/game/preview.test.ts`
 Expected: PASS, 6 tests.
 
-- [ ] **Step 5: Сделать ходы в `LineList` кликабельными**
+- [ ] **Step 5: Make the moves in `LineList` clickable**
 
-Заменить `src/ui/LineList.tsx` целиком:
+Replace `src/ui/LineList.tsx` entirely:
 
 ```tsx
 import type { EvalUpdate } from '../engine/uci'
@@ -2295,7 +2295,7 @@ export type LineListProps = {
 }
 
 export function LineList({ lines, onSelect }: LineListProps) {
-  if (lines.length === 0) return <p>Анализ…</p>
+  if (lines.length === 0) return <p>Analyzing…</p>
 
   return (
     <ol className="line-list">
@@ -2319,11 +2319,11 @@ export function LineList({ lines, onSelect }: LineListProps) {
 }
 ```
 
-`plyCount` — сколько полуходов варианта применить: клик по первому ходу даёт `1`.
+`plyCount` is how many plies of the line to apply: clicking the first move gives `1`.
 
-- [ ] **Step 6: Завести состояние просмотра в `src/App.tsx`**
+- [ ] **Step 6: Add preview state to `src/App.tsx`**
 
-Добавить импорт `import { previewFen } from './game/preview'` и состояние:
+Add the import `import { previewFen } from './game/preview'` and the state:
 
 ```tsx
 const [preview, setPreview] = useState<string | null>(null)
@@ -2335,35 +2335,35 @@ const selectLine = useCallback(
   [state.fen],
 )
 
-// Ход по доске или загрузка позиции всегда выходят из просмотра.
+// A move on the board or a loaded position always leaves the preview.
 const displayFen = preview ?? state.fen
 const previewing = preview !== null
 ```
 
-Анализ и доска теперь работают от `displayFen`:
+The analysis and the board now work from `displayFen`:
 
 ```tsx
 const analysis = useAnalysis(displayFen, settings)
 ```
 
-В `<Board>` передать `fen={displayFen}` и `dests={previewing ? new Map() : dests}` — во время просмотра ходить нельзя. В `onMove` и `loadGame` первой строкой добавить `setPreview(null)`.
+Pass `fen={displayFen}` and `dests={previewing ? new Map() : dests}` to `<Board>` — moving is not allowed during a preview. Add `setPreview(null)` as the first line of `onMove` and `loadGame`.
 
-Под доской показать кнопку возврата:
+Show a return button below the board:
 
 ```tsx
 {previewing && (
   <button type="button" onClick={() => setPreview(null)}>
-    Вернуться к партии
+    Back to game
   </button>
 )}
 ```
 
-Передать `onSelect={selectLine}` в `<LineList>`. Не забыть `import type { EvalUpdate } from './engine/uci'`.
+Pass `onSelect={selectLine}` to `<LineList>`. Remember `import type { EvalUpdate } from './engine/uci'`.
 
-- [ ] **Step 7: Проверить вручную**
+- [ ] **Step 7: Check by hand**
 
 Run: `npm run dev`
-Expected: клик по второму ходу первого варианта переставляет доску на два полухода вперёд, появляется кнопка «Вернуться к партии», оценка пересчитывается для показанной позиции. Клик по кнопке возвращает исходную позицию, ходить снова можно.
+Expected: clicking the second move of the first line advances the board two plies, a `Back to game` button appears, and the score is recomputed for the shown position. Clicking the button returns the original position and moving works again.
 
 - [ ] **Step 8: Commit**
 
@@ -2375,9 +2375,9 @@ git push
 
 ---
 
-### Task 13: Редактор позиции
+### Task 13: The position editor
 
-Четвёртый способ ввода из спека: ручная расстановка фигур.
+The fourth input method from the spec: arranging pieces by hand.
 
 **Files:**
 - Create: `src/game/editor.ts`
@@ -2386,13 +2386,13 @@ git push
 - Modify: `src/App.tsx`
 
 **Interfaces:**
-- Consumes: `isValidFen` из `src/game/game`; `chessground` API `getFen()` / `setPieces()`.
+- Consumes: `isValidFen` from `src/game/game`; chessground's `getFen()` / `setPieces()` API.
 - Produces:
   - `const EMPTY_PLACEMENT = '8/8/8/8/8/8/8/8'`
   - `function composeFen(placement: string, turn: 'w' | 'b'): string`
   - `function validatePlacement(placement: string, turn: 'w' | 'b'): { ok: true; fen: string } | { ok: false; error: string }`
 
-- [ ] **Step 1: Написать падающий тест**
+- [ ] **Step 1: Write a failing test**
 
 `src/game/editor.test.ts`:
 
@@ -2422,12 +2422,12 @@ it('rejects a position missing a king', () => {
 })
 ```
 
-- [ ] **Step 2: Запустить тест, убедиться что падает**
+- [ ] **Step 2: Run the test, confirm it fails**
 
 Run: `npx vitest run src/game/editor.test.ts`
 Expected: FAIL — `Failed to resolve import "./editor"`.
 
-- [ ] **Step 3: Написать `src/game/editor.ts`**
+- [ ] **Step 3: Write `src/game/editor.ts`**
 
 ```ts
 import { isValidFen } from './game'
@@ -2435,8 +2435,8 @@ import { isValidFen } from './game'
 export const EMPTY_PLACEMENT = '8/8/8/8/8/8/8/8'
 
 /**
- * chessground отдаёт только расстановку фигур. Права на рокировку и взятие
- * на проходе восстановить из неё нельзя, поэтому редактор их обнуляет.
+ * chessground only hands back the piece placement. Castling rights and the
+ * en-passant square cannot be recovered from it, so the editor zeroes them out.
  */
 export function composeFen(placement: string, turn: 'w' | 'b'): string {
   return `${placement} ${turn} - - 0 1`
@@ -2448,22 +2448,22 @@ export function validatePlacement(
 ): { ok: true; fen: string } | { ok: false; error: string } {
   const fen = composeFen(placement, turn)
   if (!isValidFen(fen)) {
-    return { ok: false, error: 'Некорректная позиция: на доске должны быть оба короля.' }
+    return { ok: false, error: 'Invalid position: both kings must be on the board.' }
   }
   return { ok: true, fen }
 }
 ```
 
-- [ ] **Step 4: Запустить тест, убедиться что проходит**
+- [ ] **Step 4: Run the test, confirm it passes**
 
 Run: `npx vitest run src/game/editor.test.ts`
 Expected: PASS, 4 tests.
 
-Проверено на `chess.js@1.4.0`: `validateFen` сам отвергает позицию без королей с сообщением `Invalid FEN: missing white king`. Дополнительная ручная проверка наличия королей не нужна.
+Verified against `chess.js@1.4.0`: `validateFen` rejects a kingless position on its own, with the message `Invalid FEN: missing white king`. A separate manual check for the kings is unnecessary.
 
-- [ ] **Step 5: Написать `src/ui/PositionEditor.tsx`**
+- [ ] **Step 5: Write `src/ui/PositionEditor.tsx`**
 
-Отдельная доска в свободном режиме. Клик по фигуре в палитре, затем клик по клетке — ставит фигуру. Клик по занятой клетке пустой палитрой — убирает.
+A separate board in free mode. Click a piece in the palette, then click a square — the piece is placed. Click an occupied square with an empty palette and it is removed.
 
 ```tsx
 import { Chessground } from 'chessground'
@@ -2545,7 +2545,7 @@ export function PositionEditor({ initialFen, onApply, onCancel }: PositionEditor
 
       <div className="palette">
         <button type="button" onClick={() => setSelected(null)} aria-pressed={selected === null}>
-          Ластик
+          Eraser
         </button>
         {PIECES.map((piece) => (
           <button
@@ -2561,19 +2561,19 @@ export function PositionEditor({ initialFen, onApply, onCancel }: PositionEditor
 
       <div className="editor-controls">
         <button type="button" onClick={() => api.current?.set({ fen: EMPTY_PLACEMENT })}>
-          Очистить доску
+          Clear board
         </button>
         <label>
-          <input type="radio" checked={turn === 'w'} onChange={() => setTurn('w')} /> Ход белых
+          <input type="radio" checked={turn === 'w'} onChange={() => setTurn('w')} /> White to move
         </label>
         <label>
-          <input type="radio" checked={turn === 'b'} onChange={() => setTurn('b')} /> Ход чёрных
+          <input type="radio" checked={turn === 'b'} onChange={() => setTurn('b')} /> Black to move
         </label>
         <button type="button" onClick={apply}>
-          Применить
+          Apply
         </button>
         <button type="button" onClick={onCancel}>
-          Отмена
+          Cancel
         </button>
       </div>
 
@@ -2583,9 +2583,9 @@ export function PositionEditor({ initialFen, onApply, onCancel }: PositionEditor
 }
 ```
 
-Права на рокировку редактор обнуляет — восстановить их из расстановки невозможно. Это осознанное упрощение: кому нужна рокировка, вставит FEN.
+The editor zeroes out castling rights — they cannot be recovered from a placement. This is a deliberate simplification: anyone who needs castling pastes a FEN.
 
-- [ ] **Step 6: Подключить в `src/App.tsx`**
+- [ ] **Step 6: Wire it into `src/App.tsx`**
 
 ```tsx
 const [editing, setEditing] = useState(false)
@@ -2600,12 +2600,12 @@ const applyEditedFen = useCallback(
 )
 ```
 
-Отрендерить кнопку «Редактировать позицию» (`onClick={() => setEditing(true)}`), а когда `editing === true` — показывать `<PositionEditor initialFen={state.fen} onApply={applyEditedFen} onCancel={() => setEditing(false)} />` вместо основной доски.
+Render an "Edit position" button (`onClick={() => setEditing(true)}`), and when `editing === true`, show `<PositionEditor initialFen={state.fen} onApply={applyEditedFen} onCancel={() => setEditing(false)} />` in place of the main board.
 
-- [ ] **Step 7: Проверить вручную**
+- [ ] **Step 7: Check by hand**
 
 Run: `npm run dev`
-Expected: кнопка открывает редактор. Выбор ферзя в палитре и клик по `d4` ставит белого ферзя. «Ластик» + клик убирает фигуру. «Очистить доску» + «Применить» показывает ошибку про королей. Расстановка мата в один и «Применить» возвращает к анализатору с оценкой `M1`.
+Expected: the button opens the editor. Picking the queen from the palette and clicking `d4` places a white queen. "Eraser" plus a click removes a piece. "Clear board" plus "Apply" shows the error about the kings. Setting up mate in one and pressing "Apply" returns to the analyzer with a score of `M1`.
 
 - [ ] **Step 8: Commit**
 
@@ -2617,7 +2617,7 @@ git push
 
 ---
 
-### Task 14: Роутер и заглушки страниц
+### Task 14: The router and page stubs
 
 **Files:**
 - Create: `src/pages/Analyzer.tsx`
@@ -2627,29 +2627,29 @@ git push
 - Create: `src/pages/BestMove.tsx`
 - Create: `src/ui/Nav.tsx`
 - Modify: `src/App.tsx`
-- Modify: `package.json` (добавить `react-router`)
+- Modify: `package.json` (add `react-router`)
 
 **Interfaces:**
-- Consumes: всё из предыдущих задач.
-- Produces: маршруты `/`, `/play`, `/freestyle`, `/import`, `/best-move`.
+- Consumes: everything from the previous tasks.
+- Produces: the `/`, `/play`, `/freestyle`, `/import`, `/best-move` routes.
 
-- [ ] **Step 1: Установить роутер**
+- [ ] **Step 1: Install the router**
 
 ```bash
 npm i react-router@^7
 ```
 
-- [ ] **Step 2: Перенести содержимое `App.tsx` в `src/pages/Analyzer.tsx`**
+- [ ] **Step 2: Move the contents of `App.tsx` into `src/pages/Analyzer.tsx`**
 
-Целиком переносится текущее тело `App` вместе с импортами, экспортируется как `export function Analyzer()`.
+The current body of `App` moves over wholesale, together with its imports, and is exported as `export function Analyzer()`.
 
-- [ ] **Step 3: Создать четыре заглушки**
+- [ ] **Step 3: Create the four stubs**
 
-Каждая — по одному файлу. `src/pages/PlayVsComputer.tsx`:
+One file each. `src/pages/PlayVsComputer.tsx`:
 
 ```tsx
 export function PlayVsComputer() {
-  return <p>Игра с компьютером появится в под-проекте 2.</p>
+  return <p>Play against the computer will arrive in sub-project 2.</p>
 }
 ```
 
@@ -2657,7 +2657,7 @@ export function PlayVsComputer() {
 
 ```tsx
 export function Freestyle() {
-  return <p>Chess960 появится в под-проекте 2.</p>
+  return <p>Chess960 will arrive in sub-project 2.</p>
 }
 ```
 
@@ -2665,7 +2665,7 @@ export function Freestyle() {
 
 ```tsx
 export function ImportGame() {
-  return <p>Импорт партий появится в под-проекте 3.</p>
+  return <p>Game import will arrive in sub-project 3.</p>
 }
 ```
 
@@ -2673,21 +2673,21 @@ export function ImportGame() {
 
 ```tsx
 export function BestMove() {
-  return <p>Поиск лучшего хода появится вместе с упрощённым интерфейсом анализатора.</p>
+  return <p>Best-move search will arrive alongside the simplified analyzer interface.</p>
 }
 ```
 
-- [ ] **Step 4: Создать `src/ui/Nav.tsx`**
+- [ ] **Step 4: Create `src/ui/Nav.tsx`**
 
 ```tsx
 import { NavLink } from 'react-router'
 
 const LINKS = [
-  { to: '/', label: 'Анализатор' },
-  { to: '/best-move', label: 'Лучший ход' },
-  { to: '/play', label: 'Игра с компьютером' },
+  { to: '/', label: 'Analyzer' },
+  { to: '/best-move', label: 'Best move' },
+  { to: '/play', label: 'Play vs computer' },
   { to: '/freestyle', label: 'Chess960' },
-  { to: '/import', label: 'Импорт партии' },
+  { to: '/import', label: 'Import game' },
 ]
 
 export function Nav() {
@@ -2703,7 +2703,7 @@ export function Nav() {
 }
 ```
 
-- [ ] **Step 5: Переписать `src/App.tsx`**
+- [ ] **Step 5: Rewrite `src/App.tsx`**
 
 ```tsx
 import { BrowserRouter, Route, Routes } from 'react-router'
@@ -2730,37 +2730,37 @@ export function App() {
 }
 ```
 
-- [ ] **Step 6: Прогнать весь набор тестов**
+- [ ] **Step 6: Run the whole suite**
 
 Run: `npm test`
-Expected: PASS, все файлы. Ни один тест из предыдущих задач не сломан.
+Expected: PASS, every file. Not one test from the earlier tasks is broken.
 
-- [ ] **Step 7: Проверить вручную**
+- [ ] **Step 7: Check by hand**
 
 Run: `npm run dev`
-Expected: навигация переключает страницы; на `/` анализатор работает как раньше; уход с `/` на другую страницу останавливает движок (в консоли нет продолжающегося потока `info`).
+Expected: the navigation switches pages; on `/` the analyzer works as before; leaving `/` for another page stops the engine (no continuing stream of `info` in the console).
 
-- [ ] **Step 8: Обновить `README.md`**
+- [ ] **Step 8: Update `README.md`**
 
 ```markdown
 # Chess Analyzer
 
-Локальный шахматный анализатор: Stockfish 18 в браузере, без бэкенда.
+A local chess analyzer: Stockfish 18 in the browser, no backend.
 
-## Запуск
+## Run
 
     npm install
     npm run dev
 
-Открыть http://localhost:5173
+Open http://localhost:5173
 
-## Тесты
+## Tests
 
     npm test
 
-## Лицензия
+## License
 
-GPL-3.0 (требование Stockfish).
+GPL-3.0 (a Stockfish requirement).
 ```
 
 - [ ] **Step 9: Commit**
@@ -2773,27 +2773,27 @@ git push
 
 ---
 
-## Покрытие спека
+## Spec coverage
 
-| Требование спека | Задача |
+| Spec requirement | Task |
 | --- | --- |
-| Заголовки COOP/COEP, выбор сборки движка | 1 |
-| Парсер UCI | 2 |
-| Шов `EngineTransport`, Worker и Node | 3 |
-| `analyze` / `stop`, корректное прерывание поиска | 4 |
-| Модуль партии, FEN, PGN, легальность | 5 |
-| Доска на chessground, перетаскивание | 6 |
-| Мост `useAnalysis`, eval-бар, список вариантов, троттлинг, предупреждение об однопоточности | 7 |
-| Стрелки лучших ходов | 8 |
-| Ввод FEN и PGN, обработка ошибок ввода | 9 |
-| Настройки в `localStorage` | 10 |
-| Восстановление после падения воркера | 11 |
-| Проматывание варианта кликом по ходу | 12 |
-| Редактор позиции (четвёртый способ ввода) | 13 |
-| Роутер и остальные страницы | 14 |
+| COOP/COEP headers, choosing the engine build | 1 |
+| The UCI parser | 2 |
+| The `EngineTransport` seam, Worker and Node | 3 |
+| `analyze` / `stop`, correct search interruption | 4 |
+| The game module, FEN, PGN, legality | 5 |
+| A chessground board with dragging | 6 |
+| The `useAnalysis` bridge, eval bar, line list, throttling, single-threaded warning | 7 |
+| Best-move arrows | 8 |
+| FEN and PGN input, input error handling | 9 |
+| Settings in `localStorage` | 10 |
+| Recovering from a worker crash | 11 |
+| Scrolling through a line by clicking its moves | 12 |
+| The position editor (the fourth input method) | 13 |
+| The router and the remaining pages | 14 |
 
-## Что осталось за рамками этого плана
+## What is out of scope for this plan
 
-Под-проекты 2, 3 и 4 из спека: игра с компьютером и Chess960, импорт и разбор партий, AI-чат. Каждый получит свой спек и свой план.
+Sub-projects 2, 3 and 4 from the spec: play against the computer and Chess960, game import and review, the AI chat. Each will get its own spec and its own plan.
 
-Отдельно отмечено внутри Task 13: редактор позиции обнуляет права на рокировку и поле взятия на проходе, потому что восстановить их из расстановки фигур невозможно. Пользователь, которому нужна рокировка, вводит FEN напрямую.
+Noted separately inside Task 13: the position editor zeroes out castling rights and the en-passant square, because they cannot be recovered from a piece placement. A user who needs castling enters a FEN directly.

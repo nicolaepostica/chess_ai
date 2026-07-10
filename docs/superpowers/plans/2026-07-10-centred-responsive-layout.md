@@ -1,12 +1,12 @@
 # Centred Responsive Layout Implementation Plan
 
-> **For agentic workers:** выполняйте задачи по порядку, по одной. Шаги помечены чекбоксами (`- [ ]`). Каждая задача заканчивается коммитом и пушем.
+> **For agentic workers:** work the tasks in order, one at a time. Steps are marked with checkboxes (`- [ ]`). Every task ends with a commit and a push.
 >
-> Если ваш харнесс — Claude Code с плагином superpowers, используйте `superpowers:subagent-driven-development` или `superpowers:executing-plans`. Если нет — идите по шагам сверху вниз.
+> If your harness is Claude Code with the superpowers plugin, use `superpowers:subagent-driven-development` or `superpowers:executing-plans`. If not, walk the steps top to bottom.
 
-**Goal:** Центрировать контент анализатора в контейнере ограниченной ширины, заменить резиновую правую колонку сеткой фиксированной ширины и отвязать размер доски от полей страницы.
+**Goal:** Centre the analyzer's content in a width-limited container, replace the fluid right column with a fixed-width grid, and decouple the board's size from the page padding.
 
-**Architecture:** Оболочка получает `mx-auto max-w-[1600px]`. Анализатор становится центрированной стопкой, а на широком экране — сеткой `[minmax(0,680px) 450px]` с `justify-center`. Доска считается от ширины своей колонки, а не от `100vw`, поэтому поля страницы исчезают из формулы. Eval-бар тянется по строке и не может разъехаться с доской.
+**Architecture:** The shell gets `mx-auto max-w-[1600px]`. The analyzer becomes a centred stack, and on a wide screen a `[minmax(0,680px) 450px]` grid with `justify-center`. The board sizes from its column's width rather than from `100vw`, so page padding leaves the formula. The eval bar stretches to the row and cannot drift away from the board.
 
 **Tech Stack:** Tailwind CSS v4, React 19, Vite 6, vitest.
 
@@ -14,35 +14,35 @@
 
 ## Global Constraints
 
-- **88 существующих тестов обязаны проходить без единой правки.** Новых тестов эта работа не добавляет: поведения здесь нет, только раскладка.
-- **Не трогать** `src/engine/`, `src/game/`, `src/hooks/`.
-- Сохранить зацепки: `data-testid="eval-bar"`; `role="alert"` на обоих сообщениях; доступные имена кнопок `Load FEN`, `Load PGN`, `Back to game`, `Edit position`, `Apply`, `Cancel`, `Clear board`, `Eraser`; `id` полей `fen-input`, `pgn-input`, `depth`, `multipv`; классы `line-list`, `pv-move`, `position-editor`, `palette`, `editor-controls`, `board-wrap`.
-- Тема только тёмная. Язык интерфейса английский. Класс `text-decor` запрещён (проверяется тестом).
-- Максимум доски остаётся `min(80vh, 640px)`. Ширина eval-бара остаётся `w-7` (1.75rem), зазор — `gap-2.5` (0.625rem).
-- Работаем в ветке `chess-analyzer-core`. Каждая задача: коммит + `git push`.
+- **All 88 existing tests must pass without a single edit.** This work adds no new tests: there is no behaviour here, only layout.
+- **Do not touch** `src/engine/`, `src/game/`, `src/hooks/`.
+- Preserve the handles: `data-testid="eval-bar"`; `role="alert"` on both messages; the accessible button names `Load FEN`, `Load PGN`, `Back to game`, `Edit position`, `Apply`, `Cancel`, `Clear board`, `Eraser`; the `fen-input`, `pgn-input`, `depth`, `multipv` field ids; the `line-list`, `pv-move`, `position-editor`, `palette`, `editor-controls`, `board-wrap` classes.
+- Dark theme only. Interface language is English. The `text-decor` class is forbidden (a test checks this).
+- The board's maximum stays `min(80vh, 640px)`. The eval bar's width stays `w-7` (1.75rem) and the gap stays `gap-2.5` (0.625rem).
+- We work on the `chess-analyzer-core` branch. Every task: commit + `git push`.
 
-## Предпосылки, проверенные на прототипе
+## Premises verified on a prototype
 
-Раскладка проверена одноразовым статическим прототипом до написания плана. При ширинах 1920/1440/1280 получается сетка, при 1279/1100/768/390 — центрированная стопка. Доска равна 640px везде, кроме телефона, где `390 - 24 - 38 = 328px`. Горизонтальной прокрутки нет ни на одной ширине. Высоты доски и eval-бара совпадают везде.
+The layout was verified on a throwaway static prototype before this plan was written. At widths 1920/1440/1280 it yields the grid; at 1279/1100/768/390, the centred stack. The board is 640px everywhere except on a phone, where it is `390 - 24 - 38 = 328px`. There is no horizontal scrolling at any width. Board and eval bar heights match everywhere.
 
-**Мерить зазоры нужно от `document.documentElement.clientWidth`, а не от `window.innerWidth`.** Вертикальная полоса прокрутки входит в `innerWidth`, но не в систему координат `getBoundingClientRect`. На прототипе это давало расхождение ровно в 15px и ложный вывод, что контент не центрирован.
+**Measure the gutters against `document.documentElement.clientWidth`, not `window.innerWidth`.** A vertical scrollbar counts towards `innerWidth` but not towards the coordinate system of `getBoundingClientRect`. On the prototype this produced a discrepancy of exactly 15px and a false conclusion that the content was off-centre.
 
 ---
 
-### Task 1: Центрирующий контейнер в оболочке
+### Task 1: A centring container in the shell
 
-Самая безопасная часть: раскладка анализатора пока не меняется, поэтому регрессия видна сразу.
+The safest part: the analyzer's layout does not change yet, so a regression shows up immediately.
 
 **Files:**
 - Modify: `src/ui/Shell.tsx`
 
 **Interfaces:**
-- Consumes: `Nav` из `./Nav`.
-- Produces: `<main>` и ряд шапки, ограниченные `max-w-[1600px]` и центрированные.
+- Consumes: `Nav` from `./Nav`.
+- Produces: a `<main>` and a header row constrained to `max-w-[1600px]` and centred.
 
-- [ ] **Step 1: Переписать `src/ui/Shell.tsx`**
+- [ ] **Step 1: Rewrite `src/ui/Shell.tsx`**
 
-Шапка остаётся во всю ширину экрана — её фон и нижняя граница тянутся от края до края. Центрируется только её внутренний ряд, теми же полями, что и `<main>`, иначе логотип и доска окажутся на разных вертикалях.
+The header stays full-bleed — its background and bottom border run edge to edge. Only its inner row is centred, with the same padding as `<main>`, or the logo and the board end up on different verticals.
 
 ```tsx
 import type { ReactNode } from 'react'
@@ -67,18 +67,18 @@ export function Shell({ children }: { children: ReactNode }) {
 }
 ```
 
-Поля стали `12px` на телефоне и `24px` от 640px ширины — как у оригинала (`p-3 sm:p-6`). Горизонтальные поля вынесены в общую константу, вертикальные заданы отдельно, потому что шапка задаёт высоту через `h-15`.
+Padding is now `12px` on a phone and `24px` from 640px of width up — as in the original (`p-3 sm:p-6`). The horizontal padding moved into a shared constant; the vertical padding is set separately, because the header sets its height through `h-15`.
 
-- [ ] **Step 2: Проверить**
+- [ ] **Step 2: Verify**
 
 Run: `npm test`
-Expected: PASS, 88 tests. Ни один тест не правился.
+Expected: PASS, 88 tests. Not one test was edited.
 
 Run: `npx tsc --noEmit`
-Expected: без ошибок.
+Expected: no errors.
 
 Run: `npm run build`
-Expected: сборка проходит.
+Expected: the build succeeds.
 
 - [ ] **Step 3: Commit**
 
@@ -90,36 +90,36 @@ git push
 
 ---
 
-### Task 2: Сетка вместо резиновой колонки
+### Task 2: A grid instead of a fluid column
 
 **Files:**
-- Modify: `src/styles/index.css` (только строка `--breakpoint-wide`)
-- Modify: `src/pages/Analyzer.tsx` (только блок `return`)
+- Modify: `src/styles/index.css` (the `--breakpoint-wide` line only)
+- Modify: `src/pages/Analyzer.tsx` (the `return` block only)
 
 **Interfaces:**
-- Consumes: `--breakpoint-wide` из `@theme`; компоненты `EvalBar`, `Board`, `Card`, `DepthBadge`, `LineList`, `SettingsPanel`, `PositionInput`.
-- Produces: колонка доски шириной `max-w-[680px]`, внутри неё ряд `flex w-full gap-2.5` — на эту ширину будет опираться Task 3.
+- Consumes: `--breakpoint-wide` from `@theme`; the `EvalBar`, `Board`, `Card`, `DepthBadge`, `LineList`, `SettingsPanel`, `PositionInput` components.
+- Produces: a board column of width `max-w-[680px]`, containing a `flex w-full gap-2.5` row — Task 3 will lean on that width.
 
-- [ ] **Step 1: Сдвинуть точку перелома в `src/styles/index.css`**
+- [ ] **Step 1: Move the breakpoint in `src/styles/index.css`**
 
-Две колонки требуют `680 + 450 + 24` (зазор) `+ 48` (поля) `= 1202px`. На прежних `1100px` они не помещаются.
+Two columns need `680 + 450 + 24` (gap) `+ 48` (padding) `= 1202px`. They do not fit in the previous `1100px`.
 
-Заменить строку в блоке `@theme`:
+Replace the line in the `@theme` block:
 
 ```css
   --breakpoint-wide: 1280px;
 ```
 
-Имя `wide` сохраняется, поэтому разметку переписывать не нужно.
+The name `wide` is kept, so the markup needs no rewrite.
 
-- [ ] **Step 2: Переписать блок `return` в `src/pages/Analyzer.tsx`**
+- [ ] **Step 2: Rewrite the `return` block in `src/pages/Analyzer.tsx`**
 
-Логика (`selectLine`, `onMove`, `loadGame`, `applyEditedFen`, `displayFen`, `displayTurn`, `previewing`, `dests`, `arrows`, `best`) и ранний `return` для `editing` **не меняются ни на строку**. Меняется только разметка ниже константы `ALERT`.
+The logic (`selectLine`, `onMove`, `loadGame`, `applyEditedFen`, `displayFen`, `displayTurn`, `previewing`, `dests`, `arrows`, `best`) and the early `return` for `editing` **do not change by a single line**. Only the markup below the `ALERT` constant changes.
 
 ```tsx
   return (
     <div className="flex flex-col gap-6">
-      {/* Сообщения живут НАД сеткой. Внутри неё они стали бы третьей ячейкой. */}
+      {/* Alerts live above the grid. Inside it they would become a third cell. */}
       {!analysis.multiThreaded && (
         <p role="alert" className={ALERT}>
           Multi-threaded engine unavailable (no cross-origin isolation). Falling back to the slower
@@ -133,9 +133,9 @@ git push
       )}
 
       <div className="flex flex-col items-center gap-6 wide:grid wide:grid-cols-[minmax(0,680px)_450px] wide:items-start wide:justify-center">
-        {/* Обёртка задаёт ряду ширину, не зависящую от доски: иначе формула
-            calc(100% - 2.375rem) в board.css сошлётся на ширину, которую сама
-            доска и определяет. */}
+        {/* The wrapper gives the row a width that does not depend on the board:
+            otherwise calc(100% - 2.375rem) in board.css would reference a width
+            the board itself defines. */}
         <div className="w-full max-w-[680px]">
           <div className="flex w-full gap-2.5">
             <EvalBar score={best?.score ?? null} orientation="white" />
@@ -155,7 +155,7 @@ git push
             title="Stockfish 18"
             aside={<DepthBadge reached={analysis.depth} target={settings.depth} />}
           >
-            {/* Гасим только числа. Ползунки настроек не устарели, гасить их незачем. */}
+            {/* Dim only the numbers. The settings sliders are not stale, no reason to dim them. */}
             <div className={analysis.stale ? 'opacity-50' : undefined}>
               <LineList lines={analysis.lines} onSelect={selectLine} />
             </div>
@@ -183,15 +183,15 @@ git push
 }
 ```
 
-Три изменения по сравнению с прежней разметкой. Внешний контейнер стал `flex flex-col items-center`, а на широком экране — `grid` с двумя колонками и `justify-center`. Ряд доски потерял `shrink-0` и получил `w-full` внутри обёртки `max-w-[680px]`. Правая колонка потеряла `flex-1` и получила `max-w-[650px]`, снимаемый на широком экране, где ширину задаёт колонка сетки.
+Three changes against the previous markup. The outer container became `flex flex-col items-center`, and on a wide screen a `grid` of two columns with `justify-center`. The board row lost `shrink-0` and gained `w-full` inside a `max-w-[680px]` wrapper. The right column lost `flex-1` and gained a `max-w-[650px]` that is lifted on a wide screen, where the grid column sets the width.
 
-- [ ] **Step 3: Проверить**
+- [ ] **Step 3: Verify**
 
 Run: `npm test`
-Expected: PASS, 88 tests. Пять тестов `src/pages/Analyzer.test.tsx` — главный сторож: они мокают `Board` и проверяют просмотр вариантов, который перевёрстка легко ломает.
+Expected: PASS, 88 tests. The five tests in `src/pages/Analyzer.test.tsx` are the main watchdog: they mock `Board` and check line preview, which a re-layout breaks easily.
 
 Run: `npx tsc --noEmit`
-Expected: без ошибок.
+Expected: no errors.
 
 - [ ] **Step 4: Commit**
 
@@ -203,23 +203,23 @@ git push
 
 ---
 
-### Task 3: Доска считается от своей колонки
+### Task 3: The board sizes from its column
 
-Здесь исчезает мина, которую нашло финальное ревью: `5.375rem` вручную складывал поля страницы, ширину eval-бара и зазор — три значения из трёх файлов. Task 1 уже поменял поля на `p-3 sm:p-6`, так что старая формула сейчас неверна.
+Here the landmine found by the final review disappears: `5.375rem` added up, by hand, the page padding, the eval bar's width and the gap — three values from three files. Task 1 already changed the padding to `p-3 sm:p-6`, so the old formula is wrong right now.
 
 **Files:**
-- Modify: `src/styles/index.css` (блок `@layer base`)
+- Modify: `src/styles/index.css` (the `@layer base` block)
 - Modify: `src/ui/board.css`
 - Modify: `src/ui/EvalBar.tsx`
 - Modify: `src/ui/PositionEditor.tsx`
 
 **Interfaces:**
-- Consumes: обёртку `max-w-[680px]` и ряд `flex w-full gap-2.5` из Task 2.
-- Produces: переменную `--board-max` (заменяет `--board-size`) и класс-модификатор `.board-wrap--solo`.
+- Consumes: the `max-w-[680px]` wrapper and the `flex w-full gap-2.5` row from Task 2.
+- Produces: the `--board-max` variable (replacing `--board-size`) and the `.board-wrap--solo` modifier class.
 
-- [ ] **Step 1: Заменить переменную в `src/styles/index.css`**
+- [ ] **Step 1: Replace the variable in `src/styles/index.css`**
 
-В блоке `@layer base` заменить объявление `:root` и **удалить медиазапрос целиком**:
+In the `@layer base` block, replace the `:root` declaration and **delete the media query entirely**:
 
 ```css
 @layer base {
@@ -233,7 +233,7 @@ git push
   body {
 ```
 
-То есть удаляются: строка `--board-size: min(80vh, 640px);` вместе со своим комментарием и весь блок
+That is, remove the `--board-size: min(80vh, 640px);` line together with its comment, and the whole block
 
 ```css
   @media (max-width: 1099px) {
@@ -243,7 +243,7 @@ git push
   }
 ```
 
-- [ ] **Step 2: Переписать `src/ui/board.css`**
+- [ ] **Step 2: Rewrite `src/ui/board.css`**
 
 ```css
 @import 'chessground/assets/chessground.base.css';
@@ -267,11 +267,11 @@ git push
 }
 ```
 
-- [ ] **Step 3: Растянуть eval-бар по строке в `src/ui/EvalBar.tsx`**
+- [ ] **Step 3: Stretch the eval bar to the row in `src/ui/EvalBar.tsx`**
 
-Убрать инлайновую высоту, добавить `self-stretch`. Высоту строки задаёт доска, поэтому бар не может оказаться выше или ниже неё — теперь это свойство раскладки, а не соглашение между двумя файлами.
+Remove the inline height, add `self-stretch`. The board sets the row's height, so the bar cannot end up taller or shorter than it — that is now a property of the layout rather than an agreement between two files.
 
-Заменить открывающий `<div>` на:
+Replace the opening `<div>` with:
 
 ```tsx
     <div
@@ -282,39 +282,39 @@ git push
     >
 ```
 
-Атрибут `style` удаляется целиком. Всё остальное содержимое компонента — заливка, подпись с плашкой, функции `whiteWinProbability` и `formatScore` — не трогать.
+The `style` attribute is deleted entirely. Everything else in the component — the fill, the readout with its scrim, the `whiteWinProbability` and `formatScore` functions — is left alone.
 
-- [ ] **Step 4: Пометить доску редактора как одиночную**
+- [ ] **Step 4: Mark the editor's board as solo**
 
-В `src/ui/PositionEditor.tsx` заменить
+In `src/ui/PositionEditor.tsx` replace
 
 ```tsx
       <div className="board-wrap" ref={element} />
 ```
 
-на
+with
 
 ```tsx
       <div className="board-wrap board-wrap--solo" ref={element} />
 ```
 
-Без этого доска в редакторе теряла бы 38 пикселей на eval-бар, которого рядом нет.
+Without this, the editor's board would give up 38 pixels to an eval bar that is not beside it.
 
-- [ ] **Step 5: Убедиться, что старая переменная нигде не осталась**
+- [ ] **Step 5: Make sure the old variable survives nowhere**
 
 Run: `grep -rn 'board-size' src/ README.md`
-Expected: единственное совпадение — строка 46 в `README.md`. Она исправляется в Task 4. Если `grep` находит что-то под `src/`, значит правка неполная.
+Expected: the only match is line 46 of `README.md`. It gets fixed in Task 4. If `grep` finds anything under `src/`, the edit is incomplete.
 
-- [ ] **Step 6: Проверить**
+- [ ] **Step 6: Verify**
 
 Run: `npm test`
-Expected: PASS, 88 tests. Пять тестов `EvalBar.test.tsx` не правились — они проверяют текст и классы подписи, а не высоту.
+Expected: PASS, 88 tests. The five `EvalBar.test.tsx` tests were not edited — they check the readout's text and classes, not its height.
 
 Run: `npx tsc --noEmit`
-Expected: без ошибок.
+Expected: no errors.
 
 Run: `npm run build`
-Expected: сборка проходит.
+Expected: the build succeeds.
 
 - [ ] **Step 7: Commit**
 
@@ -326,30 +326,30 @@ git push
 
 ---
 
-### Task 4: Проверка в браузере и README
+### Task 4: Browser check and README
 
-Единственная задача, требующая живого браузера. Тестами раскладка не покрывается.
+The only task that needs a live browser. Layout is not covered by tests.
 
 **Files:**
 - Modify: `README.md`
 
 **Interfaces:**
-- Consumes: всё предыдущее.
-- Produces: ничего.
+- Consumes: everything above.
+- Produces: nothing.
 
-- [ ] **Step 1: Запустить приложение**
+- [ ] **Step 1: Start the app**
 
 ```bash
 npm run dev
 ```
 
-Открыть `http://localhost:5173` и дождаться, пока движок посчитает стартовую позицию.
+Open `http://localhost:5173` and wait for the engine to evaluate the starting position.
 
-- [ ] **Step 2: Измерить раскладку на семи ширинах**
+- [ ] **Step 2: Measure the layout at seven widths**
 
-Менять размер окна браузера ненадёжно: у инструментов автоматизации команда смены viewport часто не применяется к уже открытой странице. Вместо этого вставьте в страницу iframe того же origin и меняйте **его** ширину — медиазапросы внутри iframe реагируют на его собственную ширину, а `contentDocument` доступен, потому что origin общий.
+Resizing the browser window is unreliable: automation tools often fail to apply a viewport change to an already-open page. Instead, insert a same-origin iframe into the page and change **its** width — media queries inside an iframe respond to its own width, and `contentDocument` is reachable because the origin is shared.
 
-Выполнить в консоли браузера:
+Run in the browser console:
 
 ```js
 window.__probe = (width) =>
@@ -371,8 +371,8 @@ window.__probe = (width) =>
       const layoutW = d.documentElement.clientWidth
       const bar = d.querySelector('[data-testid=eval-bar]').getBoundingClientRect()
       const b = board.getBoundingClientRect()
-      // Ближайший предок с flex-col — это контейнер сетки. Внешний контейнер
-      // страницы тоже flex-col, поэтому подниматься выше нельзя.
+      // The nearest flex-col ancestor is the grid container. The outer page
+      // container is flex-col too, so do not climb any higher.
       const grid = board.closest('.items-center')
       const c = grid.getBoundingClientRect()
       const left = Math.round(c.left)
@@ -391,13 +391,13 @@ window.__probe = (width) =>
     setTimeout(read, 400)
   })
 
-// Прогнать по очереди:
+// Run them in turn:
 for (const w of [1920, 1440, 1280, 1279, 1100, 768, 390]) console.log(await window.__probe(w))
 ```
 
-Expected на каждой ширине:
+Expected at each width:
 
-| Ширина | `display` | `board` | `centred` | `scrollsX` | `sameHeight` |
+| Width | `display` | `board` | `centred` | `scrollsX` | `sameHeight` |
 | --- | --- | --- | --- | --- | --- |
 | 1920 | `grid` | 640 | `true` | `false` | `true` |
 | 1440 | `grid` | 640 | `true` | `false` | `true` |
@@ -407,35 +407,35 @@ Expected на каждой ширине:
 | 768 | `flex` | 640 | `true` | `false` | `true` |
 | 390 | `flex` | 328 | `true` | `false` | `true` |
 
-Если `centred` ложно, а `gutters` различаются ровно на 15 — вы измеряете от `innerWidth`, а не от `clientWidth`. Полоса прокрутки входит в первое и не входит во второе.
+If `centred` is false and the `gutters` differ by exactly 15, you are measuring against `innerWidth` rather than `clientWidth`. The scrollbar counts towards the former and not the latter.
 
-Если `board` на 390 равен 366, значит `.board-wrap--solo` применён к доске анализатора, а не только к редактору.
+If `board` at 390 equals 366, then `.board-wrap--solo` has been applied to the analyzer's board and not only to the editor's.
 
-- [ ] **Step 3: Проверить редактор позиции**
+- [ ] **Step 3: Check the position editor**
 
-Нажать `Edit position`, затем `Clear board`, затем `Apply`.
-Expected: появляется сообщение `Invalid position: both kings must be on the board.` Доска редактора занимает всю ширину своей колонки, а не на 38px меньше.
+Click `Edit position`, then `Clear board`, then `Apply`.
+Expected: the message `Invalid position: both kings must be on the board.` appears. The editor's board fills the whole width of its column, not 38px less.
 
-- [ ] **Step 4: Проверить просмотр вариантов**
+- [ ] **Step 4: Check line preview**
 
-Кликнуть первый ход первого варианта трижды подряд.
-Expected: просмотр углубляется каждый раз, кнопка `Back to game` не пропадает; клик по ней возвращает 32 фигуры.
+Click the first move of the first line three times in a row.
+Expected: the preview goes one ply deeper each time and the `Back to game` button does not disappear; clicking it brings back 32 pieces.
 
-- [ ] **Step 5: Проверить шапку**
+- [ ] **Step 5: Check the header**
 
-Сузить окно так, чтобы пять вкладок не помещались.
-Expected: вкладки прокручиваются горизонтально; страница вбок не прокручивается; логотип и левый край доски стоят на одной вертикали.
+Narrow the window until the five tabs no longer fit.
+Expected: the tabs scroll horizontally; the page does not scroll sideways; the logo and the board's left edge sit on the same vertical.
 
-- [ ] **Step 6: Обновить `README.md`**
+- [ ] **Step 6: Update `README.md`**
 
-Заменить абзац
+Replace the paragraph
 
 ```markdown
 The board's size is the CSS variable `--board-size`. The eval bar takes its
 height from the same variable, so the two cannot drift apart.
 ```
 
-на
+with
 
 ```markdown
 The page is centred in a `max-w-[1600px]` container. Above 1280px the analyzer
@@ -456,29 +456,29 @@ git push
 
 ---
 
-## Покрытие спека
+## Spec coverage
 
-| Требование спека | Задача |
+| Spec requirement | Task |
 | --- | --- |
-| Контейнер `mx-auto max-w-[1600px] p-3 sm:p-6` | 1 |
-| Центрирование внутреннего ряда шапки | 1 |
-| Сетка `[minmax(0,680px) 450px]` с `justify-center` | 2 |
-| Стопка по центру ниже перелома | 2 |
-| Правая колонка ровно 450px, без `flex-1` | 2 |
-| Ряд доски получает `w-full`, теряет `shrink-0` | 2 |
-| Сообщения `role="alert"` остаются над сеткой | 2 |
-| Перелом 1100px → 1280px | 2 |
-| `--board-max` вместо `--board-size`, медиазапрос удалён | 3 |
-| Доска считается от родителя | 3 |
-| Eval-бар `self-stretch` | 3 |
-| Доска редактора без вычета eval-бара | 3 |
-| Проверка на семи ширинах через `clientWidth` | 4 |
+| The `mx-auto max-w-[1600px] p-3 sm:p-6` container | 1 |
+| Centring the header's inner row | 1 |
+| The `[minmax(0,680px) 450px]` grid with `justify-center` | 2 |
+| A centred stack below the breakpoint | 2 |
+| The right column exactly 450px, no `flex-1` | 2 |
+| The board row gains `w-full`, loses `shrink-0` | 2 |
+| `role="alert"` messages stay above the grid | 2 |
+| Breakpoint 1100px → 1280px | 2 |
+| `--board-max` replaces `--board-size`, media query deleted | 3 |
+| The board sizes from its parent | 3 |
+| The eval bar gets `self-stretch` | 3 |
+| The editor's board subtracts no eval bar | 3 |
+| A check at seven widths through `clientWidth` | 4 |
 | README | 4 |
-| 88 тестов проходят без правок | проверяется в 1, 2, 3 |
+| 88 tests pass unedited | checked in 1, 2, 3 |
 
-## Чего этот план не делает
+## What this plan does not do
 
-- Не меняет максимум доски (`min(80vh, 640px)`), ширину eval-бара и зазор.
-- Не вводит третью точку перелома.
-- Не трогает шрифты, цвета и токены палитры.
-- Не добавляет юнит-тестов: поведения здесь нет, только раскладка.
+- It does not change the board's maximum (`min(80vh, 640px)`), the eval bar's width, or the gap.
+- It does not introduce a third breakpoint.
+- It does not touch fonts, colours or palette tokens.
+- It adds no unit tests: there is no behaviour here, only layout.

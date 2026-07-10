@@ -1,85 +1,87 @@
-# Центрированная адаптивная раскладка — дизайн
+# Centred responsive layout — design
 
-Дата: 2026-07-10
-Статус: утверждён, ожидает плана реализации
-Предшественники:
-- `2026-07-09-chess-analyzer-design.md` (анализатор, реализован)
-- `2026-07-10-visual-layer-design.md` (тёмная тема, реализована)
+Date: 2026-07-10
+Status: approved, awaiting an implementation plan
+Predecessors:
+- `2026-07-09-chess-analyzer-design.md` (the analyzer, implemented)
+- `2026-07-10-visual-layer-design.md` (the dark theme, implemented)
 
-## Задача
+## Problem
 
-Контент анализатора ничем не ограничен по ширине и прижат к левому краю. На
-мониторе 1920px правая колонка (`flex-1`) растягивается почти на 1200px, и
-карточки превращаются в простыни. Ниже точки перелома колонки складываются в
-стопку, но остаются прижатыми влево, а не по центру. Поля страницы постоянны
-(24px) и на телефоне съедают заметную долю экрана.
+The analyzer's content has no width limit and hugs the left edge. On a 1920px
+monitor the right column (`flex-1`) stretches to nearly 1200px and the cards turn
+into bedsheets. Below the breakpoint the columns stack, but they stay pinned to
+the left rather than centred. Page padding is constant (24px) and eats a visible
+share of a phone screen.
 
-Приводим раскладку к геометрии chessmoveexpert.com: центрирующий контейнер,
-сетка из двух колонок фиксированной ширины, стопка по центру на узком экране.
+We bring the layout to the geometry of chessmoveexpert.com: a centring container,
+a two-column grid of fixed widths, a centred stack on narrow screens.
 
-## Что измерено у оригинала
+## What was measured on the original
 
-Снято через `getComputedStyle` на живой странице, не срисовано на глаз:
+Taken with `getComputedStyle` on the live page, not eyeballed:
 
-| Элемент | Классы |
+| Element | Classes |
 | --- | --- |
-| Контейнер страницы | `mx-auto min-h-screen max-w-[1600px] p-3 sm:p-6` |
-| Внутренняя часть шапки | `container mx-auto px-4` |
-| Сетка контента | `flex flex-col items-center gap-6 lg:gap-8`, далее `xl:grid xl:grid-cols-[minmax(0,680px)_450px] xl:items-start xl:justify-center` |
-| Колонка доски | `order-1 flex w-full max-w-[650px] flex-1` |
-| Правая колонка | `order-2 flex w-full flex-col gap-4` |
+| Page container | `mx-auto min-h-screen max-w-[1600px] p-3 sm:p-6` |
+| Header inner | `container mx-auto px-4` |
+| Content grid | `flex flex-col items-center gap-6 lg:gap-8`, then `xl:grid xl:grid-cols-[minmax(0,680px)_450px] xl:items-start xl:justify-center` |
+| Board column | `order-1 flex w-full max-w-[650px] flex-1` |
+| Right column | `order-2 flex w-full flex-col gap-4` |
 
-Доска у оригинала — 632px.
+The original's board is 632px.
 
-## Решения
+## Decisions
 
-### Контейнер
+### Container
 
-`Shell` оборачивает содержимое в `<main className="mx-auto w-full max-w-[1600px] p-3 sm:p-6">`.
+`Shell` wraps its content in `<main className="mx-auto w-full max-w-[1600px] p-3 sm:p-6">`.
 
-Шапка остаётся во всю ширину экрана (её фон и нижняя граница тянутся от края до
-края), но её внутренний ряд получает тот же центрирующий контейнер. Иначе логотип
-уедет к краю монитора, а контент под ним останется по центру.
+The header stays full-bleed (its background and bottom border run edge to edge),
+but its inner row gets the same centring container. Otherwise the logo drifts to
+the edge of the monitor while the content below it stays centred.
 
-### Сетка
+### Grid
 
-`Analyzer` перестаёт быть флексом с `flex-1` у правой колонки.
+`Analyzer` stops being a flex row with `flex-1` on the right column.
 
-- По умолчанию: `flex flex-col items-center gap-6` — стопка по центру.
-- На широком экране: `grid grid-cols-[minmax(0,680px)_450px] items-start justify-center`.
+- By default: `flex flex-col items-center gap-6` — a centred stack.
+- On a wide screen: `grid grid-cols-[minmax(0,680px)_450px] items-start justify-center`.
 
-Правая колонка — ровно `450px` и больше не растягивается. Колонка доски — `680px`,
-что в точности `640` (доска) + `28` (eval-бар) + `10` (зазор).
+The right column is exactly `450px` and no longer stretches. The board column is
+`680px`, which is precisely `640` (board) + `28` (eval bar) + `10` (gap).
 
-**Ряд с доской обязан иметь ширину, не зависящую от доски.** Сейчас он
-`flex shrink-0 gap-2.5`, то есть сжимается по содержимому. Если оставить так,
-формула `calc(100% - 2.375rem)` будет ссылаться на ширину, которую сама доска и
-определяет, — круговая зависимость, и браузер разрешит её нулём. Ряд становится
-`flex w-full gap-2.5` внутри обёртки `w-full max-w-[680px]`; `shrink-0` снимается.
+**The board row must have a width that does not depend on the board.** Today it
+is `flex shrink-0 gap-2.5`, i.e. it shrinks to its content. Left that way, the
+formula `calc(100% - 2.375rem)` would reference a width that the board itself
+defines — a circular dependency, which the browser resolves to zero. The row
+becomes `flex w-full gap-2.5` inside a `w-full max-w-[680px]` wrapper, and
+`shrink-0` is dropped.
 
-Сообщения об ошибках (`role="alert"`) остаются **над** сеткой, а не внутри неё:
-внутри `grid` они стали бы третьей ячейкой.
+Error messages (`role="alert"`) stay **above** the grid rather than inside it:
+inside a `grid` they would become a third cell.
 
-### Точка перелома сдвигается с 1100px на 1280px
+### The breakpoint moves from 1100px to 1280px
 
-Две колонки требуют `680 + 450 + 24` (зазор) `+ 48` (поля) `= 1202px`. На 1100px
-они не помещаются. Ставим 1280px, как `xl` у оригинала. Ноутбук 1280×800 получает
-двухколоночную раскладку впритык; всё, что уже, — стопку по центру.
+Two columns need `680 + 450 + 24` (gap) `+ 48` (padding) `= 1202px`. They do not
+fit at 1100px. We set 1280px, matching the original's `xl`. A 1280×800 laptop
+gets the two-column layout with nothing to spare; anything narrower gets the
+centred stack.
 
-Токен `--breakpoint-wide` в `src/styles/index.css` меняется с `1100px` на `1280px`.
-Имя `wide` сохраняется, чтобы не переписывать разметку.
+The `--breakpoint-wide` token in `src/styles/index.css` changes from `1100px` to
+`1280px`. The name `wide` is kept so the markup needs no rewrite.
 
-### Доска отвязывается от полей страницы
+### The board is decoupled from page padding
 
-Сейчас на узком экране `--board-size: min(100vw - 5.375rem, 640px)`, где
-`5.375rem` — вручную сложенные поля страницы (`p-6` в `Shell`), ширина eval-бара
-(`w-7`) и зазор (`gap-2.5`), то есть три значения из трёх разных файлов.
-Финальное ревью ветки назвало это миной: изменение `p-6` даёт горизонтальную
-прокрутку, и ничто этого не поймает. Переход на `p-3 sm:p-6` ломает формулу
-немедленно.
+Today, on a narrow screen, `--board-size: min(100vw - 5.375rem, 640px)`, where
+`5.375rem` is the page padding (`p-6` in `Shell`), the eval bar's width (`w-7`)
+and the gap (`gap-2.5`) added up by hand — three values from three different
+files. The branch's final review called this a landmine: changing `p-6` produces
+horizontal scrolling and nothing catches it. Moving to `p-3 sm:p-6` breaks the
+formula immediately.
 
-Раз у колонки доски появляется собственная ширина, доска считается **от
-родителя**, а не от окна:
+Now that the board column has a width of its own, the board is sized **from its
+parent** rather than from the window:
 
 ```css
 .board-wrap {
@@ -88,68 +90,70 @@
 }
 ```
 
-`2.375rem` — это только eval-бар (`1.75rem`) и зазор (`0.625rem`), то есть ровно
-то, что стоит с доской в одной строке. Поля страницы исчезают из формулы, потому
-что `100%` уже их учитывает. Медиазапрос для `--board-size` удаляется.
+`2.375rem` is only the eval bar (`1.75rem`) and the gap (`0.625rem`) — exactly
+what shares the row with the board. Page padding leaves the formula, because
+`100%` already accounts for it. The media query for `--board-size` is deleted.
 
-`--board-max` заменяет `--board-size` и равен `min(80vh, 640px)` на всех ширинах.
-На узком экране в силу вступает `calc(100% - 2.375rem)`, на широком — `80vh` или
-`640px`.
+`--board-max` replaces `--board-size` and equals `min(80vh, 640px)` at every
+width. On a narrow screen `calc(100% - 2.375rem)` takes over; on a wide one,
+`80vh` or `640px` does.
 
-**Редактор позиции показывает доску без eval-бара рядом.** Тот же класс
-`.board-wrap` вычел бы там 2.375rem за элемент, которого нет, и доска стала бы на
-38px уже без причины. Поэтому вычитаемое выносится в переменную с запасным
-значением — `calc(100% - var(--row-extras, 2.375rem))`, — а редактор добавляет
-модификатор `.board-wrap--solo { --row-extras: 0px }`.
+**The position editor shows a board with no eval bar beside it.** The same
+`.board-wrap` class would subtract 2.375rem there for an element that is not
+present, and the board would be 38px narrower for no reason. So the subtrahend
+moves into a variable with a fallback — `calc(100% - var(--row-extras, 2.375rem))` —
+and the editor adds a modifier, `.board-wrap--solo { --row-extras: 0px }`.
 
-### Eval-бар тянется по строке
+### The eval bar stretches to the row
 
-`EvalBar` перестаёт задавать себе высоту через `style={{ height: 'var(--board-size)' }}`
-и получает `self-stretch`. Высоту строки задаёт доска. Разъехаться они больше не
-могут по построению, а не по соглашению между двумя файлами.
+`EvalBar` stops setting its own height through `style={{ height: 'var(--board-size)' }}`
+and takes `self-stretch` instead. The board sets the row's height. The two can no
+longer drift apart by construction, rather than by agreement between two files.
 
-## Файлы
+## Files
 
-- `src/ui/Shell.tsx` — центрирующий контейнер для `<main>` и для ряда шапки.
-- `src/pages/Analyzer.tsx` — сетка вместо флекса, колонка доски с `max-w`.
-- `src/styles/index.css` — `--breakpoint-wide: 1280px`; `--board-max` вместо
-  `--board-size`; медиазапрос удаляется.
-- `src/ui/board.css` — `.board-wrap` считается от родителя; добавляется
-  `.board-wrap--solo`.
-- `src/ui/EvalBar.tsx` — `self-stretch` вместо инлайновой высоты.
-- `src/ui/PositionEditor.tsx` — доска получает `.board-wrap--solo`.
-- `README.md` — раздел «Design» называет `--board-size`; переименовать в `--board-max`
-  и переписать фразу про источник размера.
+- `src/ui/Shell.tsx` — centring container for `<main>` and for the header row.
+- `src/pages/Analyzer.tsx` — a grid instead of a flex row; board column gets `max-w`.
+- `src/styles/index.css` — `--breakpoint-wide: 1280px`; `--board-max` replaces
+  `--board-size`; the media query is deleted.
+- `src/ui/board.css` — `.board-wrap` sizes from its parent; `.board-wrap--solo`
+  is added.
+- `src/ui/EvalBar.tsx` — `self-stretch` instead of an inline height.
+- `src/ui/PositionEditor.tsx` — the board gets `.board-wrap--solo`.
+- `README.md` — the "Design" section names `--board-size`; rename it to
+  `--board-max` and rewrite the sentence about where the size comes from.
 
-Не трогаются: `src/engine/`, `src/game/`, `src/hooks/`.
+Untouched: `src/engine/`, `src/game/`, `src/hooks/`.
 
-## Тестирование
+## Testing
 
-Кода с поведением здесь нет, поэтому новых юнит-тестов не добавляется.
-**88 существующих тестов обязаны пройти без единой правки**, включая пять тестов
-просмотра вариантов в `src/pages/Analyzer.test.tsx` и тесты `EvalBar`.
+There is no behavioural code here, so no new unit tests are added. **All 88
+existing tests must pass without a single edit**, including the five line-preview
+tests in `src/pages/Analyzer.test.tsx` and the `EvalBar` tests.
 
-Проверка — в браузере, на ширинах 1920, 1440, 1280, 1279, 1100, 768, 390. На каждой:
+Verification happens in the browser, at widths 1920, 1440, 1280, 1279, 1100, 768,
+390. At each one:
 
-- горизонтальной прокрутки страницы нет;
-- контент центрирован (левый и правый зазоры равны с точностью до пикселя);
-- доска и eval-бар одной высоты;
-- на 1280 и выше — две колонки, на 1279 и ниже — стопка по центру;
-- вкладки шапки прокручиваются горизонтально, если не помещаются.
+- the page does not scroll horizontally;
+- the content is centred (left and right gutters equal to the pixel);
+- the board and the eval bar are the same height;
+- at 1280 and above, two columns; at 1279 and below, a centred stack;
+- the header tabs scroll horizontally when they do not fit.
 
-**Мерить зазоры нужно от `document.documentElement.clientWidth`, а не от
-`window.innerWidth`.** Вертикальная полоса прокрутки входит в `innerWidth`, но не
-входит в систему координат `getBoundingClientRect`. На прототипе это давало
-расхождение ровно в 15px и ложный вывод, что контент не центрирован.
+**Measure the gutters against `document.documentElement.clientWidth`, not
+`window.innerWidth`.** A vertical scrollbar counts towards `innerWidth` but not
+towards the coordinate system of `getBoundingClientRect`. On the prototype this
+produced a discrepancy of exactly 15px and a false conclusion that the content
+was off-centre.
 
-Раскладка проверена на одноразовом прототипе до написания плана: при ширинах
-1920/1440/1280 получается сетка, при 1279/1100/768/390 — центрированная стопка;
-доска равна 640px везде, кроме телефона, где она равна `390 - 24 - 38 = 328px`;
-горизонтальной прокрутки нет ни на одной ширине; высоты доски и eval-бара
-совпадают везде.
+The layout was verified on a throwaway prototype before this plan was written: at
+1920/1440/1280 it yields the grid, at 1279/1100/768/390 the centred stack; the
+board is 640px everywhere except on a phone, where it is `390 - 24 - 38 = 328px`;
+there is no horizontal scrolling at any width; board and eval bar heights match
+everywhere.
 
-## Чего не делаем
+## Out of scope
 
-- Не меняем максимальную ширину доски (640px) и правило `min(80vh, 640px)`.
-- Не вводим третью точку перелома.
-- Не трогаем шрифты, цвета и токены палитры.
+- We do not change the board's maximum width (640px) or the `min(80vh, 640px)` rule.
+- We do not introduce a third breakpoint.
+- We do not touch fonts, colours or palette tokens.

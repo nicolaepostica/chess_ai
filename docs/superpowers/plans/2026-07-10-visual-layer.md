@@ -1,12 +1,12 @@
 # Visual Layer Implementation Plan
 
-> **For agentic workers:** выполняйте задачи по порядку, по одной. Шаги помечены чекбоксами (`- [ ]`). Каждая задача заканчивается коммитом и пушем.
+> **For agentic workers:** work the tasks in order, one at a time. Steps are marked with checkboxes (`- [ ]`). Every task ends with a commit and a push.
 >
-> Если ваш харнесс — Claude Code с плагином superpowers, используйте `superpowers:subagent-driven-development` или `superpowers:executing-plans`. Если нет — идите по шагам сверху вниз, это ничего не меняет.
+> If your harness is Claude Code with the superpowers plugin, use `superpowers:subagent-driven-development` or `superpowers:executing-plans`. If not, walk the steps top to bottom; it changes nothing.
 
-**Goal:** Одеть работающий анализатор в тёмную палитру OduSphere: токены, три шрифта, липкая шапка с вкладками-пилюлями, карточки правой колонки, доступный фокус и узкие экраны.
+**Goal:** Dress the working analyzer in the OduSphere dark palette: tokens, three fonts, a sticky header with pill tabs, cards in the right column, accessible focus, and narrow screens.
 
-**Architecture:** Tailwind v4 читает блок `@theme` из единственного файла `src/styles/index.css` и генерирует утилиты. Размер доски живёт в CSS-переменной `--board-size`, от неё же считается высота eval-бара — они не могут разойтись. Логика (`engine/`, `game/`, `hooks/`) не трогается вообще: если для перекраски пришлось её изменить, значит протекла абстракция.
+**Architecture:** Tailwind v4 reads the `@theme` block from a single file, `src/styles/index.css`, and generates utilities. The board's size lives in the `--board-size` CSS variable, and the eval bar's height is computed from the same one — they cannot drift apart. The logic (`engine/`, `game/`, `hooks/`) is not touched at all: if a repaint required changing it, an abstraction has leaked.
 
 **Tech Stack:** Tailwind CSS v4, `@tailwindcss/vite`, `@fontsource` (Inter, Space Grotesk, JetBrains Mono), React 19, Vite 6, vitest.
 
@@ -14,28 +14,28 @@
 
 ## Global Constraints
 
-- Точные версии: `tailwindcss@4.3.2`, `@tailwindcss/vite@4.3.2`, `@fontsource/inter@5.2.8`, `@fontsource/space-grotesk@5.2.10`, `@fontsource/jetbrains-mono@5.2.8`.
-- **Существующие 59 тестов обязаны проходить без единой правки.** Меняем оформление, не поведение. Единственное исключение — Task 5 **дописывает** пять тестов в `src/ui/EvalBar.test.tsx`, потому что перекраска бара вводит новое поведение (цвет оценки зависит от заливки). Прежние пять тестов в этом файле не меняются.
-- **Не трогать** `src/engine/`, `src/game/`, `src/hooks/`. Единственное исключение — `useAnalysis` уже отдаёт `depth`, ничего добавлять не нужно.
-- **Никогда не набирать текст цветом `decor` (`#5B6184`).** Класс `text-decor` запрещён; это проверяется тестом. Цвет только для разделителей и отключённых элементов.
-- Язык интерфейса — **английский**. Существующие подписи не переводить.
-- Потолок доски — `min(80vh, 640px)`, не менять.
-- Тема только тёмная. Светлой нет.
-- Сохранить зацепки: `data-testid="eval-bar"`; `role="alert"` на всех сообщениях об ошибке; доступные имена кнопок `Load FEN`, `Load PGN`, `Back to game`, `Edit position`, `Apply`, `Cancel`, `Clear board`, `Eraser`; `id` полей `fen-input`, `pgn-input`, `depth`, `multipv` с их `<label htmlFor>`; классы `line-list`, `pv-move`, `position-editor`, `palette`, `editor-controls`.
-- Работаем в ветке `chess-analyzer-core`. Каждая задача: коммит + `git push`.
+- Exact versions: `tailwindcss@4.3.2`, `@tailwindcss/vite@4.3.2`, `@fontsource/inter@5.2.8`, `@fontsource/space-grotesk@5.2.10`, `@fontsource/jetbrains-mono@5.2.8`.
+- **The existing 59 tests must pass without a single edit.** We change presentation, not behaviour. The one exception is Task 5, which **appends** five tests to `src/ui/EvalBar.test.tsx`, because restyling the bar introduces new behaviour (the score's colour depends on the fill). The five previous tests in that file do not change.
+- **Do not touch** `src/engine/`, `src/game/`, `src/hooks/`. The one exception is that `useAnalysis` already returns `depth`; nothing needs adding.
+- **Never set text in the `decor` colour (`#5B6184`).** The `text-decor` class is forbidden; a test checks this. The colour is only for dividers and disabled elements.
+- The interface language is **English**. Do not translate the existing labels.
+- The board's cap is `min(80vh, 640px)`; do not change it.
+- Dark theme only. There is no light theme.
+- Preserve the handles: `data-testid="eval-bar"`; `role="alert"` on every error message; the accessible button names `Load FEN`, `Load PGN`, `Back to game`, `Edit position`, `Apply`, `Cancel`, `Clear board`, `Eraser`; the `fen-input`, `pgn-input`, `depth`, `multipv` field ids with their `<label htmlFor>`; the `line-list`, `pv-move`, `position-editor`, `palette`, `editor-controls` classes.
+- We work on the `chess-analyzer-core` branch. Every task: commit + `git push`.
 
-## Предпосылки окружения
+## Environment premises
 
-Проверено на живом стенде до написания плана:
+Verified on a live setup before this plan was written:
 
-- `npx vite build` с `@tailwindcss/vite` собирается; шрифты `@fontsource` попадают в бандл как `.woff2`.
-- `@theme { --color-fg-muted: … }` порождает `.text-fg-muted{color:var(--color-fg-muted)}`.
-- `--font-display` порождает `.font-display`.
-- `ring-accent/35` порождает `--tw-ring-color:#2dd4ff59`, то есть альфа-модификатор работает на кастомных цветах.
+- `npx vite build` with `@tailwindcss/vite` succeeds; `@fontsource` fonts land in the bundle as `.woff2`.
+- `@theme { --color-fg-muted: … }` produces `.text-fg-muted{color:var(--color-fg-muted)}`.
+- `--font-display` produces `.font-display`.
+- `ring-accent/35` produces `--tw-ring-color:#2dd4ff59`, i.e. the alpha modifier works on custom colours.
 
 ---
 
-### Task 1: Tailwind, токены и шрифты
+### Task 1: Tailwind, tokens and fonts
 
 **Files:**
 - Create: `src/styles/index.css`
@@ -45,21 +45,21 @@
 - Modify: `package.json`
 
 **Interfaces:**
-- Consumes: ничего.
-- Produces: утилиты `bg-bg`, `bg-surface`, `border-border`, `text-fg`, `text-fg-secondary`, `text-fg-muted`, `text-accent`, `text-accent-alt`, `font-display`, `font-sans`, `font-mono`; CSS-переменные `--board-size` и `--color-*`; брейкпоинт `wide` (1100px).
+- Consumes: nothing.
+- Produces: the `bg-bg`, `bg-surface`, `border-border`, `text-fg`, `text-fg-secondary`, `text-fg-muted`, `text-accent`, `text-accent-alt`, `font-display`, `font-sans`, `font-mono` utilities; the `--board-size` and `--color-*` CSS variables; the `wide` breakpoint (1100px).
 
-- [ ] **Step 1: Установить зависимости**
+- [ ] **Step 1: Install the dependencies**
 
 ```bash
 npm i -D tailwindcss@4.3.2 @tailwindcss/vite@4.3.2
 npm i @fontsource/inter@5.2.8 @fontsource/space-grotesk@5.2.10 @fontsource/jetbrains-mono@5.2.8
 ```
 
-Шрифты идут в `dependencies`, а не `devDependencies`: их `@import` попадает в продакшн-бандл.
+The fonts go into `dependencies`, not `devDependencies`: their `@import` ends up in the production bundle.
 
-- [ ] **Step 2: Подключить плагин в `vite.config.ts`**
+- [ ] **Step 2: Wire the plugin into `vite.config.ts`**
 
-Добавить импорт и плагин, всё остальное оставить как есть:
+Add the import and the plugin; leave everything else as is:
 
 ```ts
 import { defineConfig } from 'vitest/config'
@@ -83,9 +83,9 @@ export default defineConfig({
 })
 ```
 
-- [ ] **Step 3: Создать `src/styles/index.css`**
+- [ ] **Step 3: Create `src/styles/index.css`**
 
-Значения токенов взяты из спека дословно. `--color-fg-muted` — это осветлённый `#6E78A2`, а не исходный `#5B6184` с odusphere.dev: тот даёт контраст 3.38:1 и не проходит WCAG AA. Порог надо держать на **обоих** фонах: на странице и на карточке. Промежуточный `#6E76A0` проходит на странице (4.62:1), но проваливается на карточке (4.458:1).
+The token values come from the spec verbatim. `--color-fg-muted` is the lightened `#6E78A2`, not the original `#5B6184` from odusphere.dev: that one gives a contrast of 3.38:1 and fails WCAG AA. The threshold must hold on **both** backgrounds: the page and a card. The intermediate `#6E76A0` clears it on the page (4.62:1) but fails on a card (4.458:1).
 
 ```css
 @import "tailwindcss";
@@ -121,18 +121,18 @@ export default defineConfig({
 
 @layer base {
   :root {
-    /* Единственный источник размера доски. Высота eval-бара берётся отсюда же,
-       поэтому они не могут разойтись. */
+    /* The single source of the board's size. The eval bar's height comes from
+       here too, so the two cannot drift apart. */
     --board-size: min(80vh, 640px);
     color-scheme: dark;
   }
 
-  /* На узком экране высота окна больше не ограничивает: доска считается от ширины,
-     иначе на телефоне она вылезет за экран.
-     Вычитаем не только поля страницы (2 x 1.5rem), но и то, что стоит с доской
-     в одной строке: eval-бар (1.75rem) и зазор (0.625rem). Итого 5.375rem.
-     Вычесть одни поля — значит получить горизонтальную прокрутку ровно на
-     ширину бара с зазором. */
+  /* On a narrow screen the window's height no longer constrains: the board sizes
+     from the width, or it runs off a phone screen.
+     We subtract not only the page padding (2 x 1.5rem) but also what shares the
+     board's row: the eval bar (1.75rem) and the gap (0.625rem). 5.375rem total.
+     Subtracting the padding alone means horizontal scrolling by exactly the
+     bar's width plus the gap. */
   @media (max-width: 1099px) {
     :root {
       --board-size: min(100vw - 5.375rem, 640px);
@@ -145,8 +145,8 @@ export default defineConfig({
     font-family: var(--font-sans);
   }
 
-  /* Фокус не виден нигде, потому что у кнопок сняты дефолтные стили.
-     Фиолетовый второй акцент, чтобы кольцо не сливалось с активной вкладкой на циане. */
+  /* Focus is invisible everywhere, because the buttons' default styles were stripped.
+     A violet second accent, so the ring does not blend into the cyan active tab. */
   :focus-visible {
     outline: 2px solid var(--color-accent-alt);
     outline-offset: 2px;
@@ -154,7 +154,7 @@ export default defineConfig({
 }
 ```
 
-- [ ] **Step 4: Импортировать стили в `src/main.tsx`**
+- [ ] **Step 4: Import the styles in `src/main.tsx`**
 
 ```tsx
 import { StrictMode } from 'react'
@@ -169,9 +169,9 @@ createRoot(document.getElementById('root')!).render(
 )
 ```
 
-- [ ] **Step 5: Привязать доску к `--board-size` в `src/ui/board.css`**
+- [ ] **Step 5: Tie the board to `--board-size` in `src/ui/board.css`**
 
-Файл остаётся обычным CSS: это единственное место, где импортируются стили chessground, и переносить их в утилиты нельзя.
+The file stays plain CSS: it is the only place chessground's styles are imported, and they cannot move into utilities.
 
 ```css
 @import 'chessground/assets/chessground.base.css';
@@ -187,24 +187,24 @@ createRoot(document.getElementById('root')!).render(
 }
 ```
 
-- [ ] **Step 6: Проверить, что утилиты действительно сгенерированы**
+- [ ] **Step 6: Check that the utilities are really generated**
 
 ```bash
 npm run build
 grep -c 'text-fg-muted' dist/assets/*.css
 ```
 
-Expected: сборка проходит, `grep` печатает число `1` или больше.
+Expected: the build succeeds and `grep` prints `1` or more.
 
-Если `0` — Tailwind не увидел плагин либо `index.css` не импортирован из `main.tsx`.
+If it prints `0`, Tailwind did not see the plugin, or `index.css` is not imported from `main.tsx`.
 
-- [ ] **Step 7: Проверить, что ничего не сломалось**
+- [ ] **Step 7: Check that nothing broke**
 
 Run: `npm test`
-Expected: PASS, 59 tests. Ни один тест не правился.
+Expected: PASS, 59 tests. Not one test was edited.
 
 Run: `npx tsc --noEmit`
-Expected: без ошибок.
+Expected: no errors.
 
 - [ ] **Step 8: Commit**
 
@@ -216,16 +216,16 @@ git push
 
 ---
 
-### Task 2: Тест контраста палитры
+### Task 2: A palette contrast test
 
-Проверка WCAG становится тестом, а не разовым замером. Попытка вернуть красивый, но тусклый цвет упрётся в красную сборку.
+The WCAG check becomes a test rather than a one-off measurement. An attempt to bring back a pretty but dim colour runs into a red build.
 
 **Files:**
 - Create: `src/styles/contrast.ts`
 - Test: `src/styles/contrast.test.ts`
 
 **Interfaces:**
-- Consumes: `src/styles/index.css` (читается с диска как текст).
+- Consumes: `src/styles/index.css` (read from disk as text).
 - Produces:
   - `type Rgb = { r: number; g: number; b: number }`
   - `function parseColor(value: string): { rgb: Rgb; alpha: number }`
@@ -233,7 +233,7 @@ git push
   - `function relativeLuminance(rgb: Rgb): number`
   - `function contrastRatio(a: Rgb, b: Rgb): number`
 
-- [ ] **Step 1: Написать падающий тест**
+- [ ] **Step 1: Write a failing test**
 
 `src/styles/contrast.test.ts`:
 
@@ -301,20 +301,20 @@ describe('palette accessibility', () => {
     })
   }
 
-  // #5B6184 — приглушённый тон с odusphere.dev. Он даёт 3.38:1 и в текст не годится.
-  // Тест фиксирует именно это: цвет остаётся в палитре, но только для нетекстовых нужд.
+  // #5B6184 is the muted tone from odusphere.dev. It yields 3.38:1 and is unfit for text.
+  // This test pins exactly that: the colour stays in the palette, but for non-text use only.
   it('keeps the decorative tone below the text threshold, by design', () => {
     expect(contrastRatio(parseColor(token('decor')).rgb, bg)).toBeLessThan(4.5)
   })
 })
 ```
 
-- [ ] **Step 2: Запустить тест, убедиться что падает**
+- [ ] **Step 2: Run the test, confirm it fails**
 
 Run: `npx vitest run src/styles/contrast.test.ts`
 Expected: FAIL — `Failed to resolve import "./contrast"`.
 
-- [ ] **Step 3: Написать `src/styles/contrast.ts`**
+- [ ] **Step 3: Write `src/styles/contrast.ts`**
 
 ```ts
 export type Rgb = { r: number; g: number; b: number }
@@ -342,13 +342,13 @@ export function parseColor(value: string): { rgb: Rgb; alpha: number } {
   throw new Error(`Unsupported colour: ${value}`)
 }
 
-/** Полупрозрачная поверхность поверх фона даёт цвет, который человек видит на самом деле. */
+/** A translucent surface over a background yields the colour a human actually sees. */
 export function compositeOver(fg: Rgb, alpha: number, bg: Rgb): Rgb {
   const mix = (f: number, b: number) => Math.round(f * alpha + b * (1 - alpha))
   return { r: mix(fg.r, bg.r), g: mix(fg.g, bg.g), b: mix(fg.b, bg.b) }
 }
 
-/** WCAG 2.1, определение относительной яркости. */
+/** WCAG 2.1, the definition of relative luminance. */
 export function relativeLuminance({ r, g, b }: Rgb): number {
   const channel = (value: number) => {
     const c = value / 255
@@ -363,18 +363,18 @@ export function contrastRatio(a: Rgb, b: Rgb): number {
 }
 ```
 
-- [ ] **Step 4: Запустить тест, убедиться что проходит**
+- [ ] **Step 4: Run the test, confirm it passes**
 
 Run: `npx vitest run src/styles/contrast.test.ts`
 Expected: PASS, 17 tests.
 
-Если падает `fg-muted meets WCAG AA on the page background` — в `index.css` попал исходный `#5B6184`. Если падает только `on a card surface` — попал промежуточный `#6E76A0`, который проходит порог на странице, но не на карточке.
+If `fg-muted meets WCAG AA on the page background` fails, the original `#5B6184` made it into `index.css`. If only `on a card surface` fails, the intermediate `#6E76A0` did — it clears the threshold on the page but not on a card.
 
-- [ ] **Step 5: Добавить тест-страж на запрет `text-decor`**
+- [ ] **Step 5: Add a guard test forbidding `text-decor`**
 
-Запрет из спека («никогда не набирать текст цветом `decor`») сам себя не соблюдёт. Этот тест ловит нарушение при следующем же прогоне.
+The spec's ban ("never set text in the `decor` colour") will not enforce itself. This test catches a violation on the very next run.
 
-Сначала дополнить импорты **вверху** `src/styles/contrast.test.ts`:
+First extend the imports at the **top** of `src/styles/contrast.test.ts`:
 
 ```ts
 import { readdirSync, readFileSync, statSync } from 'node:fs'
@@ -382,7 +382,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 ```
 
-Затем дописать в конец файла:
+Then append to the end of the file:
 
 ```ts
 function sourceFiles(dir: string): string[] {
@@ -403,10 +403,10 @@ it('never types text in the decorative tone', () => {
 })
 ```
 
-- [ ] **Step 6: Запустить весь набор**
+- [ ] **Step 6: Run the whole suite**
 
 Run: `npm test`
-Expected: PASS, 77 tests (59 прежних + 18 новых). Ни один прежний тест не правился.
+Expected: PASS, 77 tests (59 previous + 18 new). Not one previous test was edited.
 
 - [ ] **Step 7: Commit**
 
@@ -418,7 +418,7 @@ git push
 
 ---
 
-### Task 3: Оболочка и вкладки-пилюли
+### Task 3: The shell and pill tabs
 
 **Files:**
 - Create: `src/ui/Shell.tsx`
@@ -426,12 +426,12 @@ git push
 - Modify: `src/App.tsx`
 
 **Interfaces:**
-- Consumes: утилиты из Task 1; `react-router`.
+- Consumes: the utilities from Task 1; `react-router`.
 - Produces: `function Shell(props: { children: ReactNode }): JSX.Element`; `function Nav(): JSX.Element`.
 
-- [ ] **Step 1: Переписать `src/ui/Nav.tsx`**
+- [ ] **Step 1: Rewrite `src/ui/Nav.tsx`**
 
-Пилюли. Активная — циан с прозрачностью, неактивные — приглушённый тон. `overflow-x-auto` вместо гамбургера: ради пяти пунктов меню не заводят.
+Pills. The active one is translucent cyan; the inactive ones are the muted tone. `overflow-x-auto` instead of a hamburger: nobody builds a menu for five items.
 
 ```tsx
 import { NavLink } from 'react-router'
@@ -468,7 +468,7 @@ export function Nav() {
 }
 ```
 
-- [ ] **Step 2: Создать `src/ui/Shell.tsx`**
+- [ ] **Step 2: Create `src/ui/Shell.tsx`**
 
 ```tsx
 import type { ReactNode } from 'react'
@@ -491,9 +491,9 @@ export function Shell({ children }: { children: ReactNode }) {
 }
 ```
 
-- [ ] **Step 3: Обернуть маршруты в `src/App.tsx`**
+- [ ] **Step 3: Wrap the routes in `src/App.tsx`**
 
-Заглушки получают оформление бесплатно, потому что живут внутри `Shell`.
+The stubs get their styling for free, because they live inside `Shell`.
 
 ```tsx
 import { BrowserRouter, Route, Routes } from 'react-router'
@@ -521,9 +521,9 @@ export function App() {
 }
 ```
 
-- [ ] **Step 4: Оформить четыре заглушки**
+- [ ] **Step 4: Style the four stubs**
 
-Все четыре одинаковы по структуре. `src/pages/BestMove.tsx`:
+All four share a structure. `src/pages/BestMove.tsx`:
 
 ```tsx
 export function BestMove() {
@@ -559,13 +559,13 @@ export function ImportGame() {
 }
 ```
 
-- [ ] **Step 5: Проверить**
+- [ ] **Step 5: Verify**
 
 Run: `npm test`
 Expected: PASS, 77 tests.
 
-Run: `npm run dev`, открыть `http://localhost:5173/play`.
-Expected: тёмный фон, липкая шапка, вкладка «Play vs computer» подсвечена цианом, остальные приглушены. Клавиша Tab даёт видимое фиолетовое кольцо на вкладках.
+Run: `npm run dev`, open `http://localhost:5173/play`.
+Expected: a dark background, a sticky header, the "Play vs computer" tab lit in cyan and the rest muted. Tab gives a visible violet ring on the tabs.
 
 - [ ] **Step 6: Commit**
 
@@ -577,9 +577,9 @@ git push
 
 ---
 
-### Task 4: Карточка
+### Task 4: The card
 
-Убирает тройное дублирование вёрстки правой колонки.
+Removes the threefold duplication in the right column's markup.
 
 **Files:**
 - Create: `src/ui/Card.tsx`
@@ -587,14 +587,14 @@ git push
 - Test: `src/ui/DepthBadge.test.tsx`
 
 **Interfaces:**
-- Consumes: утилиты из Task 1.
+- Consumes: the utilities from Task 1.
 - Produces:
   - `function Card(props: { title: string; aside?: ReactNode; children: ReactNode }): JSX.Element`
   - `function DepthBadge(props: { reached: number; target: number }): JSX.Element`
 
-- [ ] **Step 1: Написать падающий тест на `DepthBadge`**
+- [ ] **Step 1: Write a failing test for `DepthBadge`**
 
-Это то самое разделение `Depth`, ради которого задача и существует: сейчас интерфейс дважды печатает `Depth: 18`, и различить заказанную глубину от достигнутой невозможно.
+This is the `Depth` split the task exists for: today the interface prints `Depth: 18` twice, and there is no telling the requested depth from the reached one.
 
 `src/ui/DepthBadge.test.tsx`:
 
@@ -620,14 +620,14 @@ it('does not exceed the target when the engine overshoots', () => {
 })
 ```
 
-- [ ] **Step 2: Запустить тест, убедиться что падает**
+- [ ] **Step 2: Run the test, confirm it fails**
 
 Run: `npx vitest run src/ui/DepthBadge.test.tsx`
 Expected: FAIL — `Failed to resolve import "./DepthBadge"`.
 
-- [ ] **Step 3: Написать `src/ui/DepthBadge.tsx`**
+- [ ] **Step 3: Write `src/ui/DepthBadge.tsx`**
 
-Движок иногда рапортует глубину чуть больше заказанной (последняя итерация досчитывается целиком). Показывать `20/18` бессмысленно.
+The engine sometimes reports a depth slightly above the requested one (it finishes the last iteration in full). Showing `20/18` is meaningless.
 
 ```tsx
 export function DepthBadge({ reached, target }: { reached: number; target: number }) {
@@ -641,12 +641,12 @@ export function DepthBadge({ reached, target }: { reached: number; target: numbe
 }
 ```
 
-- [ ] **Step 4: Запустить тест, убедиться что проходит**
+- [ ] **Step 4: Run the test, confirm it passes**
 
 Run: `npx vitest run src/ui/DepthBadge.test.tsx`
 Expected: PASS, 3 tests.
 
-- [ ] **Step 5: Написать `src/ui/Card.tsx`**
+- [ ] **Step 5: Write `src/ui/Card.tsx`**
 
 ```tsx
 import type { ReactNode } from 'react'
@@ -672,7 +672,7 @@ export function Card({
 }
 ```
 
-- [ ] **Step 6: Запустить весь набор**
+- [ ] **Step 6: Run the whole suite**
 
 Run: `npm test`
 Expected: PASS, 80 tests.
@@ -687,25 +687,25 @@ git push
 
 ---
 
-### Task 5: Eval-бар
+### Task 5: The eval bar
 
-Сейчас в его JSX зашиты `#403d39`, `24px` и `min(80vh, 640px)` — три магических значения, которые обязаны совпадать с доской, но ничем не связаны.
+Right now its JSX has `#403d39`, `24px` and `min(80vh, 640px)` baked in — three magic values that must agree with the board but are connected to it by nothing.
 
 **Files:**
 - Modify: `src/ui/EvalBar.tsx`
 
 **Interfaces:**
-- Consumes: `--board-size` из Task 1; `Score` из `src/engine/uci`.
-- Produces: тот же публичный интерфейс. `whiteWinProbability` и `formatScore` **не меняются**.
+- Consumes: `--board-size` from Task 1; `Score` from `src/engine/uci`.
+- Produces: the same public interface. `whiteWinProbability` and `formatScore` **do not change**.
 
-- [ ] **Step 1: Переписать `src/ui/EvalBar.tsx`**
+- [ ] **Step 1: Rewrite `src/ui/EvalBar.tsx`**
 
-Экспорты `whiteWinProbability` и `formatScore` покрыты тестами и верны — трогать их нельзя. Меняется только разметка.
+The `whiteWinProbability` and `formatScore` exports are covered by tests and correct — they must not be touched. Only the markup changes.
 
 ```tsx
 import type { Score } from '../engine/uci'
 
-/** Логистическая кривая: 400 сантипешек ≈ 76% ожидаемого результата. */
+/** A logistic curve: 400 centipawns ≈ 76% expected score. */
 export function whiteWinProbability(score: Score): number {
   if (score.type === 'mate') return score.value > 0 ? 1 : 0
   return 1 / (1 + Math.pow(10, -score.value / 400))
@@ -742,12 +742,13 @@ export function EvalBar({
         style={{ height: `${whiteShare * 100}%` }}
       />
       {/*
-        Подпись прижата к низу, а что под ней — светлая заливка белых или тёмный
-        корпус бара — зависит от ориентации и доли белых. Ни константный цвет, ни
-        порог по доле здесь не работают: граница «залито/не залито» задаётся
-        высотой подписи в пикселях, делённой на высоту бара, а бар меняет размер
-        от ~300px до 640px. Поэтому под текстом всегда лежит собственная тёмная
-        плашка: 16.3:1 на корпусе, 10.9:1 на заливке. Геометрию знать не нужно.
+        The readout sits at the bottom, so what lies under it — the light white
+        fill or the dark bar body — depends on the orientation and on white's
+        share. Neither a constant colour nor a share threshold works here: the
+        filled/unfilled boundary is the readout's pixel height divided by the
+        bar's, and the bar ranges from ~300px to 640px. So the text carries its
+        own dark scrim: 16.3:1 over the body, 10.9:1 over the fill. No geometry
+        needed.
       */}
       <span className="absolute inset-x-0.5 bottom-1 rounded-sm bg-well/85 py-px text-center font-mono text-[10px] font-semibold text-fg tabular-nums">
         {score ? formatScore(score) : '…'}
@@ -757,17 +758,17 @@ export function EvalBar({
 }
 ```
 
-Высота берётся из той же `--board-size`, что и доска, поэтому бар не может оказаться выше или ниже неё.
+The height comes from the same `--board-size` as the board, so the bar cannot end up taller or shorter than it.
 
-Класс `z-1` не нужен: подпись позиционирована абсолютно, заливка — статически, поэтому подпись рисуется поверх по обычным правилам наложения.
+The `z-1` class is unnecessary: the readout is absolutely positioned and the fill is static, so the readout paints on top by the ordinary stacking rules.
 
-- [ ] **Step 2: Дописать тест на читаемость оценки**
+- [ ] **Step 2: Append a test for the readout's legibility**
 
-Константный тёмный текст нечитаем при мате против стороны, которой развёрнута доска: заливка нулевая, и `#04050A` ложится на `#11131C` — контраст 1.10:1. Порог по доле белых тоже не спасает, потому что граница зависит от высоты бара в пикселях (для белой ориентации она уходит с 0.053 при 300px до 0.025 при 640px, для чёрной — с 0.987 до 0.994). Плашка снимает вопрос целиком.
+Constant dark text is unreadable when the side the board faces is being mated: the fill is zero, and `#04050A` lands on `#11131C` — a contrast of 1.10:1. A threshold on white's share does not save it either, because the boundary depends on the bar's pixel height (for the white orientation it moves from 0.053 at 300px to 0.025 at 640px; for black, from 0.987 to 0.994). The scrim removes the question entirely.
 
-Прежние тесты этого не ловят, потому что смотрят только на `textContent`.
+The previous tests do not catch this, because they only look at `textContent`.
 
-Дописать в `src/ui/EvalBar.test.tsx`:
+Append to `src/ui/EvalBar.test.tsx`:
 
 ```tsx
 const readout = () => screen.getByTestId('eval-bar').querySelector('span')!
@@ -790,14 +791,14 @@ it('never paints the readout in the page background colour', () => {
 })
 ```
 
-Третий тест целится в конкретный провалившийся случай: доска развёрнута на чёрных, белые лучше на шесть с половиной пешек, заливка не дошла до подписи.
+The third test aims at the concrete failing case: the board is flipped to black, White is six and a half pawns better, and the fill has not reached the readout.
 
-Это единственное место во всём плане, где правится существующий тестовый файл, и правится он дописыванием, а не изменением прежних тестов.
+This is the one place in the whole plan where an existing test file is edited, and it is edited by appending, not by changing the previous tests.
 
-- [ ] **Step 3: Проверить**
+- [ ] **Step 3: Verify**
 
 Run: `npx vitest run src/ui/EvalBar.test.tsx`
-Expected: PASS, 8 tests — пять прежних без правок и три новых.
+Expected: PASS, 8 tests — five previous, unedited, and three new.
 
 - [ ] **Step 4: Commit**
 
@@ -809,19 +810,19 @@ git push
 
 ---
 
-### Task 6: Список вариантов
+### Task 6: The line list
 
 **Files:**
 - Modify: `src/ui/LineList.tsx`
 - Delete: `src/ui/line-list.css`
 
 **Interfaces:**
-- Consumes: `EvalUpdate` из `src/engine/uci`; `formatScore` из `./EvalBar`.
-- Produces: тот же интерфейс `LineList({ lines, onSelect })`.
+- Consumes: `EvalUpdate` from `src/engine/uci`; `formatScore` from `./EvalBar`.
+- Produces: the same `LineList({ lines, onSelect })` interface.
 
-- [ ] **Step 1: Переписать `src/ui/LineList.tsx`**
+- [ ] **Step 1: Rewrite `src/ui/LineList.tsx`**
 
-Классы `line-list` и `pv-move` сохраняются: по ним ходит браузерная проверка. Моноширинный шрифт и `tabular-nums` не косметика — оценка обновляется до десяти раз в секунду, и у пропорционального шрифта цифры разной ширины дёргали бы соседние элементы.
+The `line-list` and `pv-move` classes are preserved: the in-browser walkthrough navigates by them. The monospaced font and `tabular-nums` are not cosmetic — the score updates up to ten times a second, and with a proportional font the varying digit widths would make neighbouring elements twitch.
 
 ```tsx
 import type { EvalUpdate } from '../engine/uci'
@@ -875,21 +876,21 @@ export function LineList({ lines, onSelect }: LineListProps) {
 }
 ```
 
-- [ ] **Step 2: Удалить `src/ui/line-list.css`**
+- [ ] **Step 2: Delete `src/ui/line-list.css`**
 
 ```bash
 git rm --quiet src/ui/line-list.css
 ```
 
-Импорт `import './line-list.css'` уже отсутствует в новой версии компонента.
+The `import './line-list.css'` is already absent from the component's new version.
 
-- [ ] **Step 3: Проверить**
+- [ ] **Step 3: Verify**
 
 Run: `npm test`
 Expected: PASS, 80 tests.
 
 Run: `npx tsc --noEmit`
-Expected: без ошибок. Если ругается на несуществующий `./line-list.css` — импорт остался.
+Expected: no errors. If it complains about a missing `./line-list.css`, the import survived.
 
 - [ ] **Step 4: Commit**
 
@@ -901,20 +902,20 @@ git push
 
 ---
 
-### Task 7: Раскладка анализатора
+### Task 7: The analyzer's layout
 
-Здесь же чинятся две вещи из спека: дублирование `Depth` и слишком широкое приглушение.
+Two spec items get fixed here as well: the duplicated `Depth` and the over-broad dimming.
 
 **Files:**
 - Modify: `src/pages/Analyzer.tsx`
 
 **Interfaces:**
-- Consumes: `Shell` (через `App`), `Card`, `DepthBadge`, `EvalBar`, `LineList`, `SettingsPanel`, `PositionInput`, `PositionEditor`, `Board`.
-- Produces: ничего нового наружу.
+- Consumes: `Shell` (through `App`), `Card`, `DepthBadge`, `EvalBar`, `LineList`, `SettingsPanel`, `PositionInput`, `PositionEditor`, `Board`.
+- Produces: nothing new outward.
 
-- [ ] **Step 1: Переписать разметку `src/pages/Analyzer.tsx`**
+- [ ] **Step 1: Rewrite the markup of `src/pages/Analyzer.tsx`**
 
-Логика (`selectLine`, `onMove`, `loadGame`, `applyEditedFen`, `displayFen`, `displayTurn`) **не меняется ни на строку** — она покрыта пятью тестами и содержит недавно исправленный баг проматывания. Меняется только то, что возвращает `return`.
+The logic (`selectLine`, `onMove`, `loadGame`, `applyEditedFen`, `displayFen`, `displayTurn`) **does not change by a single line** — it is covered by five tests and contains a recently fixed preview bug. Only what `return` returns changes.
 
 ```tsx
 import { useCallback, useMemo, useState } from 'react'
@@ -1000,8 +1001,8 @@ export function Analyzer() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Сообщения живут НАД колонками. Внутри wide:flex-row они встали бы
-          третьей колонкой рядом с доской. */}
+      {/* Alerts live ABOVE the columns. Inside wide:flex-row they would become
+          a third column beside the board. */}
       {!analysis.multiThreaded && (
         <p role="alert" className={ALERT}>
           Multi-threaded engine unavailable (no cross-origin isolation). Falling back to the slower
@@ -1032,7 +1033,7 @@ export function Analyzer() {
             title="Stockfish 18"
             aside={<DepthBadge reached={analysis.depth} target={settings.depth} />}
           >
-            {/* Гасим только числа. Ползунки настроек не устарели, гасить их незачем. */}
+            {/* Dim only the numbers. The settings sliders are not stale, no reason to dim them. */}
             <div className={analysis.stale ? 'opacity-50' : undefined}>
               <LineList lines={analysis.lines} onSelect={selectLine} />
             </div>
@@ -1060,18 +1061,18 @@ export function Analyzer() {
 }
 ```
 
-Заголовок `<h1>Chess Analyzer</h1>` исчез: логотип живёт в шапке, а крупный заголовок с подзаголовком был нужен оригиналу ради поисковой выдачи.
+The `<h1>Chess Analyzer</h1>` heading is gone: the logo lives in the header, and the original needed a big heading with a subtitle for search rankings.
 
-`DepthBadge` получает `analysis.depth` (достигнутое) и `settings.depth` (цель) — те же два числа, что раньше печатались двумя неразличимыми строками `Depth: 18`.
+`DepthBadge` receives `analysis.depth` (reached) and `settings.depth` (target) — the same two numbers that used to be printed as two indistinguishable `Depth: 18` lines.
 
-- [ ] **Step 2: Проверить, что поведение не поехало**
+- [ ] **Step 2: Check that behaviour did not drift**
 
 Run: `npx vitest run src/pages/Analyzer.test.tsx`
-Expected: PASS, 5 tests. Файл теста не правился.
+Expected: PASS, 5 tests. The test file was not edited.
 
-Пять тестов проверяют ровно то, что легко сломать перевёрсткой: показ позиции партии, вход в просмотр, углубление просмотра, очередь хода на показанной позиции, возврат к партии.
+Those five tests check exactly what a re-layout breaks easily: showing the game position, entering a preview, deepening a preview, whose turn it is in the shown position, and returning to the game.
 
-- [ ] **Step 3: Запустить весь набор**
+- [ ] **Step 3: Run the whole suite**
 
 Run: `npm test`
 Expected: PASS, 80 tests.
@@ -1086,19 +1087,19 @@ git push
 
 ---
 
-### Task 8: Настройки и ввод позиции
+### Task 8: Settings and position input
 
 **Files:**
 - Modify: `src/ui/SettingsPanel.tsx`
 - Modify: `src/ui/PositionInput.tsx`
 
 **Interfaces:**
-- Consumes: `AnalyzeOptions` из `src/engine/engine`; `isValidFen`, `createGame` из `src/game/game`; `loadPgn` из `src/game/pgn`.
-- Produces: те же интерфейсы.
+- Consumes: `AnalyzeOptions` from `src/engine/engine`; `isValidFen`, `createGame` from `src/game/game`; `loadPgn` from `src/game/pgn`.
+- Produces: the same interfaces.
 
-- [ ] **Step 1: Переписать `src/ui/SettingsPanel.tsx`**
+- [ ] **Step 1: Rewrite `src/ui/SettingsPanel.tsx`**
 
-`id="depth"` и `id="multipv"` с их `<label htmlFor>` сохраняются. Подпись меняется на `Target depth` — теперь понятно, что это заказ, а не факт.
+`id="depth"` and `id="multipv"` with their `<label htmlFor>` are preserved. The label becomes `Target depth` — now it is clear this is the request, not the fact.
 
 ```tsx
 import type { AnalyzeOptions } from '../engine/engine'
@@ -1153,9 +1154,9 @@ export function SettingsPanel({
 }
 ```
 
-- [ ] **Step 2: Переписать `src/ui/PositionInput.tsx`**
+- [ ] **Step 2: Rewrite `src/ui/PositionInput.tsx`**
 
-Доступные имена `Load FEN` и `Load PGN`, `id="fen-input"`, `id="pgn-input"` и `role="alert"` сохраняются — на них держатся четыре теста.
+The accessible names `Load FEN` and `Load PGN`, the `id="fen-input"` and `id="pgn-input"`, and `role="alert"` are preserved — four tests hang on them.
 
 ```tsx
 import type { Chess } from 'chess.js'
@@ -1230,10 +1231,10 @@ export function PositionInput({ onLoad }: PositionInputProps) {
 }
 ```
 
-- [ ] **Step 3: Проверить**
+- [ ] **Step 3: Verify**
 
 Run: `npx vitest run src/ui/PositionInput.test.tsx src/hooks/useSettings.test.ts`
-Expected: PASS, 9 tests. Файлы тестов не правились.
+Expected: PASS, 9 tests. The test files were not edited.
 
 - [ ] **Step 4: Commit**
 
@@ -1245,20 +1246,20 @@ git push
 
 ---
 
-### Task 9: Редактор позиции
+### Task 9: The position editor
 
 **Files:**
 - Modify: `src/ui/PositionEditor.tsx`
 
 **Interfaces:**
-- Consumes: `chessground`; `EMPTY_PLACEMENT`, `composeFen`, `validatePlacement` из `src/game/editor`.
-- Produces: тот же интерфейс `PositionEditor({ initialFen, onApply, onCancel })`.
+- Consumes: `chessground`; `EMPTY_PLACEMENT`, `composeFen`, `validatePlacement` from `src/game/editor`.
+- Produces: the same `PositionEditor({ initialFen, onApply, onCancel })` interface.
 
-- [ ] **Step 1: Оформить `src/ui/PositionEditor.tsx`**
+- [ ] **Step 1: Style `src/ui/PositionEditor.tsx`**
 
-Классы `position-editor`, `palette`, `editor-controls` и имена кнопок `Eraser`, `Clear board`, `Apply`, `Cancel` сохраняются — по ним ходит браузерная проверка. Логика инициализации chessground и `apply()` не меняется.
+The `position-editor`, `palette`, `editor-controls` classes and the `Eraser`, `Clear board`, `Apply`, `Cancel` button names are preserved — the in-browser walkthrough navigates by them. The chessground initialization and `apply()` do not change.
 
-Заменить только `return (...)` на:
+Replace only `return (...)` with:
 
 ```tsx
   return (
@@ -1348,13 +1349,13 @@ git push
   )
 ```
 
-- [ ] **Step 2: Проверить**
+- [ ] **Step 2: Verify**
 
 Run: `npm test`
 Expected: PASS, 80 tests.
 
 Run: `npx tsc --noEmit`
-Expected: без ошибок.
+Expected: no errors.
 
 - [ ] **Step 3: Commit**
 
@@ -1366,71 +1367,71 @@ git push
 
 ---
 
-### Task 10: Проверка в браузере
+### Task 10: Browser check
 
-Единственная задача без тестов: проверяется то, что дешевле увидеть, чем описать. Требует браузера.
+The only task without tests: it checks what is cheaper to see than to describe. Needs a browser.
 
 **Files:**
 - Modify: `README.md`
 
 **Interfaces:**
-- Consumes: всё предыдущее.
-- Produces: ничего.
+- Consumes: everything above.
+- Produces: nothing.
 
-- [ ] **Step 1: Собрать и запустить**
+- [ ] **Step 1: Build and run**
 
 ```bash
 npm run build
 npm run dev
 ```
 
-Expected: сборка проходит, дев-сервер поднимается.
+Expected: the build succeeds and the dev server comes up.
 
-- [ ] **Step 2: Проверить анализатор на широком экране**
+- [ ] **Step 2: Check the analyzer on a wide screen**
 
-Открыть `http://localhost:5173` в окне шириной не меньше 1280.
+Open `http://localhost:5173` in a window at least 1280 wide.
 
 Expected:
-- Фон почти чёрный, шрифт — Inter, а не Times.
-- Шапка липкая, логотип `ChessAnalyzer` со вторым словом на циане, вкладка «Analyzer» подсвечена.
-- Доска деревянная, 640px, слева eval-бар той же высоты, без просвета снизу.
-- Карточка `Stockfish 18` справа, у заголовка счётчик `depth 18/18`, который **растёт по ходу счёта**, а не появляется сразу.
-- Ползунок называется `Target depth`. Строки `Depth: 18` дважды на экране больше нет.
-- Три варианта, у первого оценка цианом. Ходы разделены зазором.
+- The background is near-black and the font is Inter, not Times.
+- The header is sticky, the `ChessAnalyzer` logo has its second word in cyan, and the "Analyzer" tab is lit.
+- The board is wooden, 640px, with the eval bar to its left at the same height and no gap at the bottom.
+- The `Stockfish 18` card is on the right, its title carrying a `depth 18/18` counter that **climbs as the search runs** rather than appearing at once.
+- The slider is called `Target depth`. The `Depth: 18` line no longer appears twice on screen.
+- Three lines, the first with a cyan score. The moves are separated by a gap.
 
-- [ ] **Step 3: Проверить приглушение**
+- [ ] **Step 3: Check the dimming**
 
-Сделать ход по доске.
+Make a move on the board.
 
-Expected: гаснет только список вариантов; ползунки `Target depth` и `Variations` остаются в полную яркость.
+Expected: only the line list dims; the `Target depth` and `Variations` sliders stay at full brightness.
 
-- [ ] **Step 4: Проверить просмотр варианта**
+- [ ] **Step 4: Check line preview**
 
-Кликнуть первый ход первого варианта, затем первый ход в обновившемся списке, затем ещё раз.
+Click the first move of the first line, then the first move in the refreshed list, then once more.
 
-Expected: просмотр углубляется каждый раз, кнопка `Back to game` не пропадает. Клик по ней возвращает 32 фигуры на места.
+Expected: the preview goes deeper each time and the `Back to game` button does not disappear. Clicking it puts all 32 pieces back.
 
-- [ ] **Step 5: Проверить редактор**
+- [ ] **Step 5: Check the editor**
 
-Нажать `Edit position`, выбрать ферзя, поставить на `d4`, нажать `Clear board`, затем `Apply`.
+Click `Edit position`, pick the queen, place it on `d4`, click `Clear board`, then `Apply`.
 
-Expected: появляется сообщение `Invalid position: both kings must be on the board.` фиолетовым.
+Expected: the message `Invalid position: both kings must be on the board.` appears in violet.
 
-- [ ] **Step 6: Проверить клавиатуру**
+- [ ] **Step 6: Check the keyboard**
 
-Нажимать Tab от адресной строки.
+Press Tab starting from the address bar.
 
-Expected: каждый интерактивный элемент — вкладки, ползунки, поля, кнопки, ходы в вариантах — получает видимое фиолетовое кольцо.
+Expected: every interactive element — tabs, sliders, fields, buttons, moves within lines — receives a visible violet ring.
 
-- [ ] **Step 7: Проверить узкий экран**
+- [ ] **Step 7: Check a narrow screen**
 
-Сузить окно до 900px.
+Narrow the window to 900px.
 
-Expected: доска и карточки складываются в стопку, доска считается от ширины и не вылезает за экран, вкладки в шапке прокручиваются горизонтально.
+Expected: the board and the cards stack, the board sizes from the width and does not run off the screen, and the header tabs scroll horizontally.
 
-- [ ] **Step 8: Обновить `README.md`**
+- [ ] **Step 8: Update `README.md`**
 
-Заменить раздел `## Tools` на:
+Replace the `## Tools` section with:
 
 ```markdown
 ## Tools
@@ -1459,35 +1460,35 @@ git push
 
 ---
 
-## Покрытие спека
+## Spec coverage
 
-| Требование спека | Задача |
+| Spec requirement | Task |
 | --- | --- |
-| Tailwind v4, плагин Vite | 1 |
-| Токены палитры, `#6E78A2` вместо `#5B6184` | 1 |
-| Три шрифта через `@fontsource`, самохостинг | 1 |
-| `--board-size` как единственный источник размера | 1 |
-| Кольцо фокуса на `accent-alt` | 1 |
-| Узкие экраны, точка перелома 1100px | 1 (`--board-size`, брейкпоинт) и 7 (`wide:flex-row`) |
-| Тест контраста токенов | 2 |
-| Запрет `text-decor` | 2 |
-| Липкая шапка, вкладки-пилюли, горизонтальная прокрутка | 3 |
-| Заглушки получают оформление через `Shell` | 3 |
-| Карточка, снятие тройного дублирования | 4 |
-| Разделение `Depth` на цель и достигнутое | 4 (`DepthBadge`) и 7 (проброс) |
-| Eval-бар без инлайновых стилей | 5 |
-| Список вариантов, удаление `line-list.css` | 6 |
-| Раскладка анализатора, снятие крупного заголовка | 7 |
-| Приглушение только чисел | 7 |
-| `Target depth` вместо `Depth` | 8 |
-| Оформление ввода позиции | 8 |
-| Оформление редактора позиции | 9 |
-| Браузерная проверка, README | 10 |
-| 59 прежних тестов проходят без правок | проверяется в 1, 5, 6, 7, 8, 9 |
+| Tailwind v4, the Vite plugin | 1 |
+| Palette tokens, `#6E78A2` instead of `#5B6184` | 1 |
+| Three fonts through `@fontsource`, self-hosted | 1 |
+| `--board-size` as the single source of the size | 1 |
+| A focus ring in `accent-alt` | 1 |
+| Narrow screens, the 1100px breakpoint | 1 (`--board-size`, breakpoint) and 7 (`wide:flex-row`) |
+| A token contrast test | 2 |
+| The `text-decor` ban | 2 |
+| Sticky header, pill tabs, horizontal scroll | 3 |
+| Stubs get their styling through `Shell` | 3 |
+| The card, removing the threefold duplication | 4 |
+| Splitting `Depth` into target and reached | 4 (`DepthBadge`) and 7 (wiring) |
+| The eval bar without inline styles | 5 |
+| The line list, deleting `line-list.css` | 6 |
+| The analyzer's layout, dropping the big heading | 7 |
+| Dimming only the numbers | 7 |
+| `Target depth` instead of `Depth` | 8 |
+| Styling the position input | 8 |
+| Styling the position editor | 9 |
+| Browser check, README | 10 |
+| The 59 previous tests pass unedited | checked in 1, 5, 6, 7, 8, 9 |
 
-## Чего этот план не делает
+## What this plan does not do
 
-- Светлой темы. Токены к ней готовы: переопределить `--color-*` под `:root[data-theme="light"]`.
-- Анимаций сверх той, что уже есть у eval-бара.
-- Логотипа-картинки: только текст.
-- AI-чата (под-проект 4). Карточка под него не резервируется.
+- A light theme. The tokens are ready for one: override `--color-*` under `:root[data-theme="light"]`.
+- Animation beyond what the eval bar already has.
+- An image logo: text only.
+- The AI chat (sub-project 4). No card is reserved for it.

@@ -36,12 +36,13 @@ export function EvalBar({
         style={{ height: `${whiteShare * 100}%` }}
       />
       {/*
-        Подпись прижата к низу, а что под ней — светлая заливка белых или тёмный
-        корпус бара — зависит от ориентации и доли белых. Ни константный цвет, ни
-        порог по доле здесь не работают: граница «залито/не залито» задаётся
-        высотой подписи в пикселях, делённой на высоту бара, а бар меняет размер
-        от ~300px до 640px. Поэтому под текстом всегда лежит собственная тёмная
-        плашка: 16.3:1 на корпусе, 10.9:1 на заливке. Геометрию знать не нужно.
+        The readout sits at the bottom, so what lies under it — the light white
+        fill or the dark bar body — depends on the orientation and on white's
+        share. Neither a constant colour nor a share threshold works here: the
+        filled/unfilled boundary is the readout's pixel height divided by the
+        bar's, and the bar ranges from ~300px to 640px. So the text carries its
+        own dark scrim: 16.3:1 over the body, 10.9:1 over the fill. No geometry
+        needed.
       */}
       <span className="absolute inset-x-0.5 bottom-1 rounded-sm bg-well/85 py-px text-center font-mono text-[10px] font-semibold text-fg tabular-nums">
         {score ? formatScore(score) : '…'}
