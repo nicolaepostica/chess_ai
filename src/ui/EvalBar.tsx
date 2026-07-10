@@ -15,18 +15,6 @@ export function formatScore(score: Score): string {
   return `${pawns > 0 ? '+' : '-'}${Math.abs(pawns).toFixed(2)}`
 }
 
-/**
- * Оценка печатается у нижнего края. Что под ней — светлая заливка белых или
- * тёмный корпус бара — зависит от ориентации и от доли белых, поэтому цвет
- * текста обязан выбираться, а не задаваться константой.
- *
- * Порог 0.05 — это запас: подпись занимает около 12px, а бар не бывает ниже
- * ~300px, то есть 4%. При доле меньше порога низ гарантированно не залит.
- */
-export function readoutOnFill(whiteShare: number, orientation: 'white' | 'black'): boolean {
-  return orientation === 'white' ? whiteShare >= 0.05 : whiteShare >= 0.95
-}
-
 export function EvalBar({
   score,
   orientation,
@@ -35,7 +23,6 @@ export function EvalBar({
   orientation: 'white' | 'black'
 }) {
   const whiteShare = score ? whiteWinProbability(score) : 0.5
-  const onFill = readoutOnFill(whiteShare, orientation)
 
   return (
     <div
@@ -49,11 +36,15 @@ export function EvalBar({
         className="w-full bg-fg transition-[height] duration-200"
         style={{ height: `${whiteShare * 100}%` }}
       />
-      <span
-        className={`absolute inset-x-0 bottom-1 text-center font-mono text-[10px] font-semibold tabular-nums ${
-          onFill ? 'text-bg' : 'text-fg'
-        }`}
-      >
+      {/*
+        Подпись прижата к низу, а что под ней — светлая заливка белых или тёмный
+        корпус бара — зависит от ориентации и доли белых. Ни константный цвет, ни
+        порог по доле здесь не работают: граница «залито/не залито» задаётся
+        высотой подписи в пикселях, делённой на высоту бара, а бар меняет размер
+        от ~300px до 640px. Поэтому под текстом всегда лежит собственная тёмная
+        плашка: 16.3:1 на корпусе, 10.9:1 на заливке. Геометрию знать не нужно.
+      */}
+      <span className="absolute inset-x-0.5 bottom-1 rounded-sm bg-well/85 py-px text-center font-mono text-[10px] font-semibold text-fg tabular-nums">
         {score ? formatScore(score) : '…'}
       </span>
     </div>

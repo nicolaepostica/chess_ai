@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { render, screen } from '@testing-library/react'
 import { expect, it } from 'vitest'
-import { EvalBar, formatScore, readoutOnFill, whiteWinProbability } from './EvalBar'
+import { EvalBar, formatScore, whiteWinProbability } from './EvalBar'
 
 it('formats a centipawn score in pawns with a sign', () => {
   expect(formatScore({ type: 'cp', value: 616 })).toBe('+6.16')
@@ -32,27 +32,21 @@ it('renders the score text', () => {
   expect(screen.getByTestId('eval-bar')).toHaveTextContent('+0.50')
 })
 
-it('puts the readout on the fill when White owns the bottom of the bar', () => {
-  expect(readoutOnFill(1, 'white')).toBe(true)
-  expect(readoutOnFill(0.5, 'white')).toBe(true)
-})
+const readout = () => screen.getByTestId('eval-bar').querySelector('span')!
 
-it('keeps the readout off the fill when White has collapsed', () => {
-  expect(readoutOnFill(0, 'white')).toBe(false)
-  expect(readoutOnFill(0.01, 'white')).toBe(false)
-})
-
-it('flips the rule when the board is oriented for Black', () => {
-  expect(readoutOnFill(0.5, 'black')).toBe(false)
-  expect(readoutOnFill(1, 'black')).toBe(true)
-})
-
-it('colours the readout light when it does not sit on the fill', () => {
+it('keeps the readout legible when White has collapsed and the fill is gone', () => {
   render(<EvalBar score={{ type: 'mate', value: -1 }} orientation="white" />)
-  expect(screen.getByTestId('eval-bar').querySelector('span')).toHaveClass('text-fg')
+  expect(readout()).toHaveClass('text-fg')
+  expect(readout()).toHaveClass('bg-well/85')
 })
 
-it('colours the readout dark when it sits on the fill', () => {
+it('keeps the readout legible when the fill covers the whole bar', () => {
   render(<EvalBar score={{ type: 'mate', value: 1 }} orientation="white" />)
-  expect(screen.getByTestId('eval-bar').querySelector('span')).toHaveClass('text-bg')
+  expect(readout()).toHaveClass('text-fg')
+  expect(readout()).toHaveClass('bg-well/85')
+})
+
+it('never paints the readout in the page background colour', () => {
+  render(<EvalBar score={{ type: 'cp', value: 650 }} orientation="black" />)
+  expect(readout()).not.toHaveClass('text-bg')
 })
