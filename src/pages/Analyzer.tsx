@@ -80,8 +80,7 @@ export function Analyzer() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Сообщения живут НАД колонками. Внутри wide:flex-row они встали бы
-          третьей колонкой рядом с доской. */}
+      {/* Alerts live above the grid. Inside it they would become a third cell. */}
       {!analysis.multiThreaded && (
         <p role="alert" className={ALERT}>
           Multi-threaded engine unavailable (no cross-origin isolation). Falling back to the slower
@@ -94,25 +93,30 @@ export function Analyzer() {
         </p>
       )}
 
-      <div className="flex flex-col gap-6 wide:flex-row wide:items-start">
-        <div className="flex shrink-0 gap-2.5">
-          <EvalBar score={best?.score ?? null} orientation="white" />
-          <Board
-            fen={displayFen}
-            dests={previewing ? new Map() : dests}
-            orientation="white"
-            turn={displayTurn}
-            arrows={arrows}
-            onMove={onMove}
-          />
+      <div className="flex flex-col items-center gap-6 wide:grid wide:grid-cols-[minmax(0,680px)_450px] wide:items-start wide:justify-center">
+        {/* The wrapper gives the row a width that does not depend on the board:
+            otherwise calc(100% - 2.375rem) in board.css would reference a width
+            the board itself defines. */}
+        <div className="w-full max-w-[680px]">
+          <div className="flex w-full gap-2.5">
+            <EvalBar score={best?.score ?? null} orientation="white" />
+            <Board
+              fen={displayFen}
+              dests={previewing ? new Map() : dests}
+              orientation="white"
+              turn={displayTurn}
+              arrows={arrows}
+              onMove={onMove}
+            />
+          </div>
         </div>
 
-        <div className="flex min-w-0 flex-1 flex-col gap-4">
+        <div className="flex w-full min-w-0 max-w-[650px] flex-col gap-4 wide:max-w-none">
           <Card
             title="Stockfish 18"
             aside={<DepthBadge reached={analysis.depth} target={settings.depth} />}
           >
-            {/* Гасим только числа. Ползунки настроек не устарели, гасить их незачем. */}
+            {/* Dim only the numbers. The settings sliders are not stale, no reason to dim them. */}
             <div className={analysis.stale ? 'opacity-50' : undefined}>
               <LineList lines={analysis.lines} onSelect={selectLine} />
             </div>
