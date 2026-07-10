@@ -45,6 +45,29 @@ describe('colour maths', () => {
     expect(contrastRatio(a, b)).toBeCloseTo(contrastRatio(b, a), 10)
   })
 
+  // The three tests above cannot fail on a wrong implementation: contrastRatio
+  // sorts the luminances before dividing, so symmetry holds for any function,
+  // and white maps to 1 and black to 0 under any monotonic curve. These pin the
+  // curve and the channel weights themselves.
+
+  it('applies the sRGB gamma curve, not a linear ramp', () => {
+    // A linear ramp would give 0.5019…
+    expect(relativeLuminance({ r: 128, g: 128, b: 128 })).toBeCloseTo(0.215861, 6)
+  })
+
+  it('weights the channels per WCAG, not equally', () => {
+    // Swapping the red and green coefficients would give 0.7152 for pure red.
+    expect(relativeLuminance({ r: 255, g: 0, b: 0 })).toBeCloseTo(0.2126, 6)
+    expect(relativeLuminance({ r: 0, g: 255, b: 0 })).toBeCloseTo(0.7152, 6)
+    expect(relativeLuminance({ r: 0, g: 0, b: 255 })).toBeCloseTo(0.0722, 6)
+  })
+
+  it('computes known mid-tone ratios', () => {
+    const grey = { r: 128, g: 128, b: 128 }
+    expect(contrastRatio(grey, { r: 255, g: 255, b: 255 })).toBeCloseTo(3.9494, 3)
+    expect(contrastRatio(grey, { r: 0, g: 0, b: 0 })).toBeCloseTo(5.3172, 3)
+  })
+
   it('composites a translucent surface over the page background', () => {
     expect(compositeOver({ r: 255, g: 255, b: 255 }, 0, bg)).toEqual(bg)
     expect(compositeOver({ r: 255, g: 255, b: 255 }, 1, bg)).toEqual({ r: 255, g: 255, b: 255 })
@@ -77,11 +100,18 @@ function sourceFiles(dir: string): string[] {
   })
 }
 
+// The decorative tone can reach text three ways: the Tailwind utility, the raw
+// variable in an inline style, and the literal hex in an arbitrary value.
+const DECOR_IN_TEXT = /\btext-decor\b|var\(\s*--color-decor\s*\)|#5B6184/i
+
+// contrast.test.ts names all three patterns; index.css legitimately defines the token.
+const ALLOWED_TO_NAME_IT = ['contrast.test.ts', 'index.css']
+
 it('never types text in the decorative tone', () => {
   const src = fileURLToPath(new URL('..', import.meta.url))
   const offenders = sourceFiles(src).filter((file) => {
-    if (file.endsWith('contrast.test.ts')) return false
-    return /\btext-decor\b/.test(readFileSync(file, 'utf8'))
+    if (ALLOWED_TO_NAME_IT.some((allowed) => file.endsWith(allowed))) return false
+    return DECOR_IN_TEXT.test(readFileSync(file, 'utf8'))
   })
   expect(offenders).toEqual([])
 })
