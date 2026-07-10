@@ -15,6 +15,18 @@ export function formatScore(score: Score): string {
   return `${pawns > 0 ? '+' : '-'}${Math.abs(pawns).toFixed(2)}`
 }
 
+/**
+ * Оценка печатается у нижнего края. Что под ней — светлая заливка белых или
+ * тёмный корпус бара — зависит от ориентации и от доли белых, поэтому цвет
+ * текста обязан выбираться, а не задаваться константой.
+ *
+ * Порог 0.05 — это запас: подпись занимает около 12px, а бар не бывает ниже
+ * ~300px, то есть 4%. При доле меньше порога низ гарантированно не залит.
+ */
+export function readoutOnFill(whiteShare: number, orientation: 'white' | 'black'): boolean {
+  return orientation === 'white' ? whiteShare >= 0.05 : whiteShare >= 0.95
+}
+
 export function EvalBar({
   score,
   orientation,
@@ -23,6 +35,7 @@ export function EvalBar({
   orientation: 'white' | 'black'
 }) {
   const whiteShare = score ? whiteWinProbability(score) : 0.5
+  const onFill = readoutOnFill(whiteShare, orientation)
 
   return (
     <div
@@ -36,7 +49,11 @@ export function EvalBar({
         className="w-full bg-fg transition-[height] duration-200"
         style={{ height: `${whiteShare * 100}%` }}
       />
-      <span className="absolute inset-x-0 bottom-1 z-1 text-center font-mono text-[10px] font-semibold text-bg tabular-nums">
+      <span
+        className={`absolute inset-x-0 bottom-1 text-center font-mono text-[10px] font-semibold tabular-nums ${
+          onFill ? 'text-bg' : 'text-fg'
+        }`}
+      >
         {score ? formatScore(score) : '…'}
       </span>
     </div>
