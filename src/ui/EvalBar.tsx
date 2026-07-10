@@ -15,33 +15,28 @@ export function formatScore(score: Score): string {
   return `${pawns > 0 ? '+' : '-'}${Math.abs(pawns).toFixed(2)}`
 }
 
-export function EvalBar({ score, orientation }: { score: Score | null; orientation: 'white' | 'black' }) {
+export function EvalBar({
+  score,
+  orientation,
+}: {
+  score: Score | null
+  orientation: 'white' | 'black'
+}) {
   const whiteShare = score ? whiteWinProbability(score) : 0.5
-  const whiteHeight = `${whiteShare * 100}%`
 
   return (
     <div
       data-testid="eval-bar"
-      className="eval-bar"
-      style={{
-        display: 'flex',
-        flexDirection: orientation === 'white' ? 'column-reverse' : 'column',
-        width: '24px',
-        height: 'min(80vh, 640px)',
-        background: '#403d39',
-        position: 'relative',
-      }}
+      className={`relative w-7 shrink-0 overflow-hidden rounded-md border border-border bg-well ${
+        orientation === 'white' ? 'flex flex-col-reverse' : 'flex flex-col'
+      }`}
+      style={{ height: 'var(--board-size)' }}
     >
-      <div style={{ height: whiteHeight, background: '#f0f0f0', transition: 'height 200ms' }} />
-      <span
-        style={{
-          position: 'absolute',
-          inset: 'auto 0 4px 0',
-          textAlign: 'center',
-          fontSize: '10px',
-          color: '#111',
-        }}
-      >
+      <div
+        className="w-full bg-fg transition-[height] duration-200"
+        style={{ height: `${whiteShare * 100}%` }}
+      />
+      <span className="absolute inset-x-0 bottom-1 z-1 text-center font-mono text-[10px] font-semibold text-bg tabular-nums">
         {score ? formatScore(score) : '…'}
       </span>
     </div>
