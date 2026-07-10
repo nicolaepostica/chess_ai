@@ -4,19 +4,20 @@ import { BestMove } from './pages/BestMove'
 import { Freestyle } from './pages/Freestyle'
 import { ImportGame } from './pages/ImportGame'
 import { PlayVsComputer } from './pages/PlayVsComputer'
-import { Nav } from './ui/Nav'
+import { Shell } from './ui/Shell'
 
 export function App() {
   return (
     <BrowserRouter>
-      <Nav />
-      <Routes>
-        <Route path="/" element={<Analyzer />} />
-        <Route path="/best-move" element={<BestMove />} />
-        <Route path="/play" element={<PlayVsComputer />} />
-        <Route path="/freestyle" element={<Freestyle />} />
-        <Route path="/import" element={<ImportGame />} />
-      </Routes>
+      <Shell>
+        <Routes>
+          <Route path="/" element={<Analyzer />} />
+          <Route path="/best-move" element={<BestMove />} />
+          <Route path="/play" element={<PlayVsComputer />} />
+          <Route path="/freestyle" element={<Freestyle />} />
+          <Route path="/import" element={<ImportGame />} />
+        </Routes>
+      </Shell>
     </BrowserRouter>
   )
 }

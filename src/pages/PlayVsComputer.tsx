@@ -1,3 +1,3 @@
 export function PlayVsComputer() {
-  return <p>Play against the computer will arrive in sub-project 2.</p>
+  return <p className="text-fg-secondary">Play against the computer will arrive in sub-project 2.</p>
 }
