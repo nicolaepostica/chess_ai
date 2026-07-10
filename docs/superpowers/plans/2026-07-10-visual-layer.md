@@ -716,18 +716,6 @@ export function formatScore(score: Score): string {
   return `${pawns > 0 ? '+' : '-'}${Math.abs(pawns).toFixed(2)}`
 }
 
-/**
- * Оценка печатается у нижнего края. Что под ней — светлая заливка белых или
- * тёмный корпус бара — зависит от ориентации и от доли белых, поэтому цвет
- * текста обязан выбираться, а не задаваться константой.
- *
- * Порог 0.05 — это запас: подпись занимает около 12px, а бар не бывает ниже
- * ~300px, то есть 4%. При доле меньше порога низ гарантированно не залит.
- */
-export function readoutOnFill(whiteShare: number, orientation: 'white' | 'black'): boolean {
-  return orientation === 'white' ? whiteShare >= 0.05 : whiteShare >= 0.95
-}
-
 export function EvalBar({
   score,
   orientation,
@@ -736,7 +724,6 @@ export function EvalBar({
   orientation: 'white' | 'black'
 }) {
   const whiteShare = score ? whiteWinProbability(score) : 0.5
-  const onFill = readoutOnFill(whiteShare, orientation)
 
   return (
     <div
@@ -750,11 +737,15 @@ export function EvalBar({
         className="w-full bg-fg transition-[height] duration-200"
         style={{ height: `${whiteShare * 100}%` }}
       />
-      <span
-        className={`absolute inset-x-0 bottom-1 text-center font-mono text-[10px] font-semibold tabular-nums ${
-          onFill ? 'text-bg' : 'text-fg'
-        }`}
-      >
+      {/*
+        Подпись прижата к низу, а что под ней — светлая заливка белых или тёмный
+        корпус бара — зависит от ориентации и доли белых. Ни константный цвет, ни
+        порог по доле здесь не работают: граница «залито/не залито» задаётся
+        высотой подписи в пикселях, делённой на высоту бара, а бар меняет размер
+        от ~300px до 640px. Поэтому под текстом всегда лежит собственная тёмная
+        плашка: 16.3:1 на корпусе, 10.9:1 на заливке. Геометрию знать не нужно.
+      */}
+      <span className="absolute inset-x-0.5 bottom-1 rounded-sm bg-well/85 py-px text-center font-mono text-[10px] font-semibold text-fg tabular-nums">
         {score ? formatScore(score) : '…'}
       </span>
     </div>
@@ -768,45 +759,41 @@ export function EvalBar({
 
 - [ ] **Step 2: Дописать тест на читаемость оценки**
 
-Оценка нечитаема, если её красить константой: при мате против стороны, которой развёрнута доска, заливка нулевая, и тёмный текст ложится на тёмный корпус бара (`#04050A` на `#11131C` — контраст 1.10:1). Прежние тесты этого не ловят, потому что смотрят только на `textContent`.
+Константный тёмный текст нечитаем при мате против стороны, которой развёрнута доска: заливка нулевая, и `#04050A` ложится на `#11131C` — контраст 1.10:1. Порог по доле белых тоже не спасает, потому что граница зависит от высоты бара в пикселях (для белой ориентации она уходит с 0.053 при 300px до 0.025 при 640px, для чёрной — с 0.987 до 0.994). Плашка снимает вопрос целиком.
+
+Прежние тесты этого не ловят, потому что смотрят только на `textContent`.
 
 Дописать в `src/ui/EvalBar.test.tsx`:
 
 ```tsx
-import { readoutOnFill } from './EvalBar'
+const readout = () => screen.getByTestId('eval-bar').querySelector('span')!
 
-it('puts the readout on the fill when White owns the bottom of the bar', () => {
-  expect(readoutOnFill(1, 'white')).toBe(true)
-  expect(readoutOnFill(0.5, 'white')).toBe(true)
-})
-
-it('keeps the readout off the fill when White has collapsed', () => {
-  expect(readoutOnFill(0, 'white')).toBe(false)
-  expect(readoutOnFill(0.01, 'white')).toBe(false)
-})
-
-it('flips the rule when the board is oriented for Black', () => {
-  expect(readoutOnFill(0.5, 'black')).toBe(false)
-  expect(readoutOnFill(1, 'black')).toBe(true)
-})
-
-it('colours the readout light when it does not sit on the fill', () => {
+it('keeps the readout legible when White has collapsed and the fill is gone', () => {
   render(<EvalBar score={{ type: 'mate', value: -1 }} orientation="white" />)
-  expect(screen.getByTestId('eval-bar').querySelector('span')).toHaveClass('text-fg')
+  expect(readout()).toHaveClass('text-fg')
+  expect(readout()).toHaveClass('bg-well/85')
 })
 
-it('colours the readout dark when it sits on the fill', () => {
+it('keeps the readout legible when the fill covers the whole bar', () => {
   render(<EvalBar score={{ type: 'mate', value: 1 }} orientation="white" />)
-  expect(screen.getByTestId('eval-bar').querySelector('span')).toHaveClass('text-bg')
+  expect(readout()).toHaveClass('text-fg')
+  expect(readout()).toHaveClass('bg-well/85')
+})
+
+it('never paints the readout in the page background colour', () => {
+  render(<EvalBar score={{ type: 'cp', value: 650 }} orientation="black" />)
+  expect(readout()).not.toHaveClass('text-bg')
 })
 ```
+
+Третий тест целится в конкретный провалившийся случай: доска развёрнута на чёрных, белые лучше на шесть с половиной пешек, заливка не дошла до подписи.
 
 Это единственное место во всём плане, где правится существующий тестовый файл, и правится он дописыванием, а не изменением прежних тестов.
 
 - [ ] **Step 3: Проверить**
 
 Run: `npx vitest run src/ui/EvalBar.test.tsx`
-Expected: PASS, 10 tests — пять прежних без правок и пять новых.
+Expected: PASS, 8 tests — пять прежних без правок и три новых.
 
 - [ ] **Step 4: Commit**
 
