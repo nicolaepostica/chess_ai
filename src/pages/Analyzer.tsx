@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import type { Chess } from 'chess.js'
 import type { EvalUpdate } from '../engine/uci'
+import type { Square } from '../game/game'
 import { createGame, getState, legalDests, tryMove } from '../game/game'
 import { previewFen } from '../game/preview'
 import { useAnalysis } from '../hooks/useAnalysis'
@@ -15,6 +16,10 @@ import { PositionInput } from '../ui/PositionInput'
 import { SettingsPanel } from '../ui/SettingsPanel'
 import { linesToArrows } from '../ui/arrows'
 import { SECONDARY_BUTTON } from '../ui/buttonStyles'
+
+// Board's sync effect keys on dests by identity. A fresh Map each render would
+// re-run api.set() on every render and cut the move animation short.
+const NO_DESTS: Map<Square, Square[]> = new Map()
 
 export function Analyzer() {
   const [game, setGame] = useState(() => createGame())
@@ -102,7 +107,7 @@ export function Analyzer() {
             <EvalBar score={best?.score ?? null} orientation="white" />
             <Board
               fen={displayFen}
-              dests={previewing ? new Map() : dests}
+              dests={previewing ? NO_DESTS : dests}
               orientation="white"
               turn={displayTurn}
               arrows={arrows}

@@ -56,7 +56,6 @@ export function Board({ fen, dests, orientation, turn, arrows = [], onMove }: Bo
       api.current = null
     }
     // Initialize exactly once. Updates flow through api.set below.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
