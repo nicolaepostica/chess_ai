@@ -96,6 +96,12 @@
 На узком экране в силу вступает `calc(100% - 2.375rem)`, на широком — `80vh` или
 `640px`.
 
+**Редактор позиции показывает доску без eval-бара рядом.** Тот же класс
+`.board-wrap` вычел бы там 2.375rem за элемент, которого нет, и доска стала бы на
+38px уже без причины. Поэтому вычитаемое выносится в переменную с запасным
+значением — `calc(100% - var(--row-extras, 2.375rem))`, — а редактор добавляет
+модификатор `.board-wrap--solo { --row-extras: 0px }`.
+
 ### Eval-бар тянется по строке
 
 `EvalBar` перестаёт задавать себе высоту через `style={{ height: 'var(--board-size)' }}`
@@ -108,8 +114,10 @@
 - `src/pages/Analyzer.tsx` — сетка вместо флекса, колонка доски с `max-w`.
 - `src/styles/index.css` — `--breakpoint-wide: 1280px`; `--board-max` вместо
   `--board-size`; медиазапрос удаляется.
-- `src/ui/board.css` — `.board-wrap` считается от родителя.
+- `src/ui/board.css` — `.board-wrap` считается от родителя; добавляется
+  `.board-wrap--solo`.
 - `src/ui/EvalBar.tsx` — `self-stretch` вместо инлайновой высоты.
+- `src/ui/PositionEditor.tsx` — доска получает `.board-wrap--solo`.
 - `README.md` — раздел «Design» называет `--board-size`; переименовать в `--board-max`
   и переписать фразу про источник размера.
 
