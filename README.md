@@ -30,6 +30,22 @@ Engine binaries (the ~7 MB Stockfish WASM) are copied from `node_modules` into
 - `/best-move`, `/play`, `/freestyle`, `/import` — stubs for upcoming sub-projects
   (play vs. computer, Chess960, game import).
 
+## Design
+
+Dark theme only. Palette and typography follow
+[odusphere.dev](https://odusphere.dev); the layout follows
+[chessmoveexpert.com](https://chessmoveexpert.com). The board keeps
+chessground's classic wooden squares.
+
+Tokens live in `src/styles/index.css` and their contrast is enforced by
+`src/styles/contrast.test.ts`, which fails the build if any text colour drops
+below WCAG AA on either the page background or a card surface. The `decor`
+token (`#5B6184`) is deliberately below that threshold and may never be used
+for text; a test guards that too.
+
+The board's size is the CSS variable `--board-size`. The eval bar takes its
+height from the same variable, so the two cannot drift apart.
+
 ## License
 
 GPL-3.0 — required by Stockfish.

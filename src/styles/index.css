@@ -38,10 +38,14 @@
   }
 
   /* On narrow screens the viewport height no longer caps the size: derive it
-     from the width, or the board overflows the phone. */
+     from the width, or the board overflows the phone.
+     What sits on that row besides the board: the page padding (2 x 1.5rem),
+     the eval bar (1.75rem) and the gap between them (0.625rem) — 5.375rem in
+     total. Subtracting only the padding leaves the page scrolling sideways by
+     exactly the width of the bar and the gap. */
   @media (max-width: 1099px) {
     :root {
-      --board-size: min(100vw - 3rem, 640px);
+      --board-size: min(100vw - 5.375rem, 640px);
     }
   }
 
