@@ -3,6 +3,9 @@
 @import 'chessground/assets/chessground.cburnett.css';
 
 .board-wrap {
-  width: min(80vh, 640px);
+  width: var(--board-size);
   aspect-ratio: 1;
+  flex: none;
+  border-radius: 6px;
+  overflow: hidden;
 }
