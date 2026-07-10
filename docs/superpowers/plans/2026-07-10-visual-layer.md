@@ -85,7 +85,7 @@ export default defineConfig({
 
 - [ ] **Step 3: Создать `src/styles/index.css`**
 
-Значения токенов взяты из спека дословно. `--color-fg-muted` — это осветлённый `#6E76A0`, а не исходный `#5B6184` с odusphere.dev: тот даёт контраст 3.38:1 и не проходит WCAG AA.
+Значения токенов взяты из спека дословно. `--color-fg-muted` — это осветлённый `#6E78A2`, а не исходный `#5B6184` с odusphere.dev: тот даёт контраст 3.38:1 и не проходит WCAG AA. Порог надо держать на **обоих** фонах: на странице и на карточке. Промежуточный `#6E76A0` проходит на странице (4.62:1), но проваливается на карточке (4.458:1).
 
 ```css
 @import "tailwindcss";
@@ -106,7 +106,7 @@ export default defineConfig({
 
   --color-fg: #EEF0FA;
   --color-fg-secondary: #9AA1BD;
-  --color-fg-muted: #6E76A0;
+  --color-fg-muted: #6E78A2;
 
   --color-accent: #2DD4FF;
   --color-accent-alt: #7C83FF;
@@ -364,7 +364,7 @@ export function contrastRatio(a: Rgb, b: Rgb): number {
 Run: `npx vitest run src/styles/contrast.test.ts`
 Expected: PASS, 17 tests.
 
-Если падает `fg-muted meets WCAG AA` — в `index.css` попал исходный `#5B6184` вместо `#6E76A0`.
+Если падает `fg-muted meets WCAG AA on the page background` — в `index.css` попал исходный `#5B6184`. Если падает только `on a card surface` — попал промежуточный `#6E76A0`, который проходит порог на странице, но не на карточке.
 
 - [ ] **Step 5: Добавить тест-страж на запрет `text-decor`**
 
@@ -1417,7 +1417,7 @@ git push
 | Требование спека | Задача |
 | --- | --- |
 | Tailwind v4, плагин Vite | 1 |
-| Токены палитры, `#6E76A0` вместо `#5B6184` | 1 |
+| Токены палитры, `#6E78A2` вместо `#5B6184` | 1 |
 | Три шрифта через `@fontsource`, самохостинг | 1 |
 | `--board-size` как единственный источник размера | 1 |
 | Кольцо фокуса на `accent-alt` | 1 |
