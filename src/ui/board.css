@@ -3,9 +3,17 @@
 @import 'chessground/assets/chessground.cburnett.css';
 
 .board-wrap {
-  width: var(--board-size);
+  /* Sized from its column, never from the viewport. The only things sharing the
+     board's row are the eval bar (1.75rem) and the gap beside it (0.625rem);
+     the page padding is already accounted for by `100%`. */
+  width: min(var(--board-max), calc(100% - var(--row-extras, 2.375rem)));
   aspect-ratio: 1;
   flex: none;
   border-radius: 6px;
   overflow: hidden;
+}
+
+/* The position editor shows the board with no eval bar beside it. */
+.board-wrap--solo {
+  --row-extras: 0px;
 }

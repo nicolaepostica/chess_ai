@@ -27,10 +27,9 @@ export function EvalBar({
   return (
     <div
       data-testid="eval-bar"
-      className={`relative w-7 shrink-0 overflow-hidden rounded-md border border-border bg-well ${
+      className={`relative w-7 shrink-0 self-stretch overflow-hidden rounded-md border border-border bg-well ${
         orientation === 'white' ? 'flex flex-col-reverse' : 'flex flex-col'
       }`}
-      style={{ height: 'var(--board-size)' }}
     >
       <div
         className="w-full bg-fg transition-[height] duration-200"

@@ -31,22 +31,10 @@
 
 @layer base {
   :root {
-    /* The single source of the board size. The eval bar height is derived
-       from it too, so the two can never drift apart. */
-    --board-size: min(80vh, 640px);
+    /* Upper bound only. The board's real width comes from its column, so the
+       page padding never enters the formula. */
+    --board-max: min(80vh, 640px);
     color-scheme: dark;
-  }
-
-  /* On narrow screens the viewport height no longer caps the size: derive it
-     from the width, or the board overflows the phone.
-     What sits on that row besides the board: the page padding (2 x 1.5rem),
-     the eval bar (1.75rem) and the gap between them (0.625rem) — 5.375rem in
-     total. Subtracting only the padding leaves the page scrolling sideways by
-     exactly the width of the bar and the gap. */
-  @media (max-width: 1099px) {
-    :root {
-      --board-size: min(100vw - 5.375rem, 640px);
-    }
   }
 
   body {

@@ -74,7 +74,7 @@ export function PositionEditor({ initialFen, onApply, onCancel }: PositionEditor
 
   return (
     <section className="position-editor flex flex-col gap-4">
-      <div className="board-wrap" ref={element} />
+      <div className="board-wrap board-wrap--solo" ref={element} />
 
       <div className="palette flex flex-wrap gap-1.5">
         <button
