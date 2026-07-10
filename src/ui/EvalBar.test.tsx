@@ -46,7 +46,12 @@ it('keeps the readout legible when the fill covers the whole bar', () => {
   expect(readout()).toHaveClass('bg-well/85')
 })
 
-it('never paints the readout in the page background colour', () => {
+// Board oriented for Black, White ahead by ~6.5 pawns: the fill grows from the
+// top and stops short of the bottom-anchored readout. A threshold-based colour
+// painted this case dark-on-dark at 1.10:1.
+it('keeps the readout legible when the board is oriented for Black', () => {
   render(<EvalBar score={{ type: 'cp', value: 650 }} orientation="black" />)
+  expect(readout()).toHaveClass('text-fg')
+  expect(readout()).toHaveClass('bg-well/85')
   expect(readout()).not.toHaveClass('text-bg')
 })

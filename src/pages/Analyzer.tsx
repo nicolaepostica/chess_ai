@@ -14,6 +14,7 @@ import { PositionEditor } from '../ui/PositionEditor'
 import { PositionInput } from '../ui/PositionInput'
 import { SettingsPanel } from '../ui/SettingsPanel'
 import { linesToArrows } from '../ui/arrows'
+import { SECONDARY_BUTTON } from '../ui/buttonStyles'
 
 export function Analyzer() {
   const [game, setGame] = useState(() => createGame())
@@ -76,8 +77,6 @@ export function Analyzer() {
   }
 
   const ALERT = 'rounded-lg border border-accent-alt/40 bg-accent-alt/10 p-3 text-sm'
-  const SECONDARY_BUTTON =
-    'rounded-lg border border-border bg-white/3 px-3.5 py-2 text-[13px] text-fg-secondary hover:text-fg'
 
   return (
     <div className="flex flex-col gap-6">

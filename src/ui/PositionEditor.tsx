@@ -2,6 +2,7 @@ import { Chessground } from 'chessground'
 import type { Api } from 'chessground/api'
 import { useEffect, useRef, useState } from 'react'
 import { EMPTY_PLACEMENT, validatePlacement } from '../game/editor'
+import { SECONDARY_BUTTON } from './buttonStyles'
 import './board.css'
 
 const PIECES = [
@@ -108,15 +109,18 @@ export function PositionEditor({ initialFen, onApply, onCancel }: PositionEditor
       <div className="editor-controls flex flex-wrap items-center gap-3">
         <button
           type="button"
-          className="rounded-lg border border-border bg-white/3 px-3.5 py-2 text-[13px] text-fg-secondary hover:text-fg"
+          className={SECONDARY_BUTTON}
           onClick={() => api.current?.set({ fen: EMPTY_PLACEMENT })}
         >
           Clear board
         </button>
 
+        {/* A shared name makes these a real radio group: arrow keys roam it and
+            screen readers announce "1 of 2". */}
         <label className="flex items-center gap-1.5 text-[13px] text-fg-secondary">
           <input
             type="radio"
+            name="side-to-move"
             checked={turn === 'w'}
             onChange={() => setTurn('w')}
             className="accent-accent"
@@ -126,6 +130,7 @@ export function PositionEditor({ initialFen, onApply, onCancel }: PositionEditor
         <label className="flex items-center gap-1.5 text-[13px] text-fg-secondary">
           <input
             type="radio"
+            name="side-to-move"
             checked={turn === 'b'}
             onChange={() => setTurn('b')}
             className="accent-accent"
@@ -142,7 +147,7 @@ export function PositionEditor({ initialFen, onApply, onCancel }: PositionEditor
         </button>
         <button
           type="button"
-          className="rounded-lg border border-border bg-white/3 px-3.5 py-2 text-[13px] text-fg-secondary hover:text-fg"
+          className={SECONDARY_BUTTON}
           onClick={onCancel}
         >
           Cancel

@@ -2,11 +2,10 @@ import type { Chess } from 'chess.js'
 import { useState } from 'react'
 import { createGame, isValidFen } from '../game/game'
 import { loadPgn } from '../game/pgn'
+import { SECONDARY_BUTTON as BUTTON } from './buttonStyles'
 
 const FIELD =
   'w-full rounded-lg border border-border bg-black/35 px-2.5 py-2 font-mono text-xs text-fg placeholder:text-fg-muted'
-const BUTTON =
-  'rounded-lg border border-border bg-white/3 px-3.5 py-2 text-[13px] text-fg-secondary hover:text-fg'
 
 export type PositionInputProps = {
   onLoad: (game: Chess) => void
