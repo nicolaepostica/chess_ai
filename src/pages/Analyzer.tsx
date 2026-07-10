@@ -6,18 +6,20 @@ import { previewFen } from '../game/preview'
 import { useAnalysis } from '../hooks/useAnalysis'
 import { useSettings } from '../hooks/useSettings'
 import { Board } from '../ui/Board'
+import { Card } from '../ui/Card'
+import { DepthBadge } from '../ui/DepthBadge'
 import { EvalBar } from '../ui/EvalBar'
 import { LineList } from '../ui/LineList'
-import { PositionInput } from '../ui/PositionInput'
 import { PositionEditor } from '../ui/PositionEditor'
+import { PositionInput } from '../ui/PositionInput'
 import { SettingsPanel } from '../ui/SettingsPanel'
 import { linesToArrows } from '../ui/arrows'
 
 export function Analyzer() {
   const [game, setGame] = useState(() => createGame())
   const [state, setState] = useState(() => getState(game))
-
   const [preview, setPreview] = useState<string | null>(null)
+  const [editing, setEditing] = useState(false)
 
   const dests = useMemo(() => legalDests(game), [state.fen])
   const [settings, updateSettings] = useSettings()
@@ -52,8 +54,6 @@ export function Analyzer() {
     setState(getState(next))
   }, [])
 
-  const [editing, setEditing] = useState(false)
-
   const applyEditedFen = useCallback(
     (fen: string) => {
       setEditing(false)
@@ -65,51 +65,77 @@ export function Analyzer() {
 
   const best = analysis.lines[0] ?? null
 
+  if (editing) {
+    return (
+      <PositionEditor
+        initialFen={state.fen}
+        onApply={applyEditedFen}
+        onCancel={() => setEditing(false)}
+      />
+    )
+  }
+
+  const ALERT = 'rounded-lg border border-accent-alt/40 bg-accent-alt/10 p-3 text-sm'
+  const SECONDARY_BUTTON =
+    'rounded-lg border border-border bg-white/3 px-3.5 py-2 text-[13px] text-fg-secondary hover:text-fg'
+
   return (
-    <main>
-      <h1>Chess Analyzer</h1>
+    <div className="flex flex-col gap-6">
+      {/* Сообщения живут НАД колонками. Внутри wide:flex-row они встали бы
+          третьей колонкой рядом с доской. */}
       {!analysis.multiThreaded && (
-        <p role="alert">
+        <p role="alert" className={ALERT}>
           Multi-threaded engine unavailable (no cross-origin isolation). Falling back to the slower
           single-threaded build.
         </p>
       )}
-      {analysis.error && <p role="alert">{analysis.error}</p>}
-      {editing ? (
-        <PositionEditor
-          initialFen={state.fen}
-          onApply={applyEditedFen}
-          onCancel={() => setEditing(false)}
-        />
-      ) : (
-        <>
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
-            <EvalBar score={best?.score ?? null} orientation="white" />
-            <Board
-              fen={displayFen}
-              dests={previewing ? new Map() : dests}
-              orientation="white"
-              turn={displayTurn}
-              arrows={arrows}
-              onMove={onMove}
-            />
-            <div style={{ opacity: analysis.stale ? 0.5 : 1 }}>
-              <SettingsPanel settings={settings} onChange={updateSettings} />
-              <p>Depth: {analysis.depth}</p>
+      {analysis.error && (
+        <p role="alert" className={ALERT}>
+          {analysis.error}
+        </p>
+      )}
+
+      <div className="flex flex-col gap-6 wide:flex-row wide:items-start">
+        <div className="flex shrink-0 gap-2.5">
+          <EvalBar score={best?.score ?? null} orientation="white" />
+          <Board
+            fen={displayFen}
+            dests={previewing ? new Map() : dests}
+            orientation="white"
+            turn={displayTurn}
+            arrows={arrows}
+            onMove={onMove}
+          />
+        </div>
+
+        <div className="flex min-w-0 flex-1 flex-col gap-4">
+          <Card
+            title="Stockfish 18"
+            aside={<DepthBadge reached={analysis.depth} target={settings.depth} />}
+          >
+            {/* Гасим только числа. Ползунки настроек не устарели, гасить их незачем. */}
+            <div className={analysis.stale ? 'opacity-50' : undefined}>
               <LineList lines={analysis.lines} onSelect={selectLine} />
             </div>
-          </div>
-          {previewing && (
-            <button type="button" onClick={() => setPreview(null)}>
-              Back to game
+            {previewing && (
+              <button type="button" className={`mt-3 ${SECONDARY_BUTTON}`} onClick={() => setPreview(null)}>
+                Back to game
+              </button>
+            )}
+          </Card>
+
+          <Card title="Settings">
+            <SettingsPanel settings={settings} onChange={updateSettings} />
+          </Card>
+
+          <Card title="Position">
+            <PositionInput onLoad={loadGame} />
+            <button type="button" className={`mt-3 ${SECONDARY_BUTTON}`} onClick={() => setEditing(true)}>
+              Edit position
             </button>
-          )}
-          <button type="button" onClick={() => setEditing(true)}>
-            Edit position
-          </button>
-        </>
-      )}
-      <PositionInput onLoad={loadGame} />
-    </main>
+          </Card>
+        </div>
+      </div>
+    </div>
   )
 }
