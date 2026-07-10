@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/space-grotesk/500.css";
+@import "@fontsource/space-grotesk/700.css";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/600.css";
+
+@theme {
+  --color-bg: #04050A;
+  --color-surface: rgba(255, 255, 255, 0.024);
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-well: #11131C;
+
+  --color-fg: #EEF0FA;
+  --color-fg-secondary: #9AA1BD;
+  --color-fg-muted: #6E78A2;
+
+  --color-accent: #2DD4FF;
+  --color-accent-alt: #7C83FF;
+  --color-decor: #5B6184;
+
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --breakpoint-wide: 1280px;
+}
+
+@layer base {
+  :root {
+    /* Upper bound only. The board's real width comes from its column, so the
+       page padding never enters the formula. */
+    --board-max: min(80vh, 640px);
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+  }
+
+  /* Focus is invisible otherwise because buttons drop default styles. Use the
+     purple secondary accent so the ring doesn't blend into the cyan active tab. */
+  :focus-visible {
+    outline: 2px solid var(--color-accent-alt);
+    outline-offset: 2px;
+  }
+}

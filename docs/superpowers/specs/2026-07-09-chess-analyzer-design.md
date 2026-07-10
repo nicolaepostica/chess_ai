@@ -1,86 +1,87 @@
-# Локальный шахматный анализатор — дизайн
+# Local chess analyzer — design
 
-Дата: 2026-07-09
-Статус: утверждён, ожидает плана реализации
+Date: 2026-07-09
+Status: approved, awaiting an implementation plan
 
-## Что строим
+## What we are building
 
-Локальный аналог chessmoveexpert.com: браузерный шахматный анализатор, работающий
-целиком на клиенте. Stockfish компилируется в WASM и крутится в Web Worker,
-никакого бэкенда для анализа нет.
+A local counterpart to chessmoveexpert.com: a browser chess analyzer that runs
+entirely on the client. Stockfish is compiled to WASM and spins in a Web Worker;
+there is no backend for the analysis.
 
-Оригинал состоит из пяти инструментов: анализатор позиции, поиск лучшего хода,
-игра с компьютером, Freestyle (Chess960), импорт и разбор партий. Плюс AI-чат,
-объясняющий оценку движка человеческим языком.
+The original consists of five tools: a position analyzer, a best-move finder,
+play against the computer, Freestyle (Chess960), and game import with review.
+Plus an AI chat that explains the engine's evaluation in plain language.
 
-## Что НЕ строим
+## What we are NOT building
 
-Осознанно выброшено как не относящееся к локальному использованию:
+Deliberately dropped as irrelevant to local use:
 
-- Многоязычность (i18n).
-- Статические страницы: About, Contact, Privacy Policy, Terms of Service.
-- SEO-обвес, блог, «Write for Us».
+- Internationalization (i18n).
+- Static pages: About, Contact, Privacy Policy, Terms of Service.
+- SEO scaffolding, a blog, "Write for Us".
 
-Отдельно: текущее содержимое репозитория — бот для chess.com, кликающий мышью
-через `pyautogui` по захардкоженным координатам. Это принципиально другой
-продукт, он сохранён в ветке `legacy-chessdotcom-bot` и переиспользованию не
-подлежит. Новый проект ничего не автоматизирует на чужих сайтах — он только
-анализирует позицию, которую ему дали.
+Separately: the repository's current contents are a chess.com bot that clicks the
+mouse through `pyautogui` at hardcoded coordinates. That is a fundamentally
+different product; it is preserved on the `legacy-chessdotcom-bot` branch and is
+not for reuse. The new project automates nothing on anyone else's site — it only
+analyzes the position it is given.
 
-## Стек
+## Stack
 
 - Vite + React + TypeScript.
-- `stockfish` (npm, v18.0.8) — движок, WASM-порт Stockfish 18 от nmrugg.
-- `chess.js` (v1.4.0) — легальность ходов, FEN, PGN, Chess960.
-- `chessground` (v9.2.1, Lichess, MIT) — доска, перетаскивание, стрелки.
-- `vitest` — тесты.
-- Никакого бэкенда на первом этапе. Настройки — в `localStorage`.
+- `stockfish` (npm, v18.0.8) — the engine, nmrugg's WASM port of Stockfish 18.
+- `chess.js` (v1.4.0) — move legality, FEN, PGN, Chess960.
+- `chessground` (v9.2.1, Lichess, MIT) — board, dragging, arrows.
+- `vitest` — tests.
+- No backend in the first stage. Settings live in `localStorage`.
 
-## Технические ограничения
+## Technical constraints
 
-Всё в этом разделе проверено экспериментально на пакете `stockfish@18.0.8`.
+Everything in this section was verified experimentally against `stockfish@18.0.8`.
 
-**Выбор сборки движка.** Пакет содержит пять вариантов. Полный многопоточный
-(`stockfish-18.wasm`) весит **113 МБ** — неприемлемо долго грузится. Сборка
-`lite` весит **7 МБ** и, по заявлению авторов, всё ещё существенно сильнее любого
-человека. Берём `stockfish-18-lite.js` (многопоточный) как основной вариант и
-`stockfish-18-lite-single.js` как фолбэк.
+**Choosing the engine build.** The package ships five variants. The full
+multi-threaded one (`stockfish-18.wasm`) weighs **113 MB** — unacceptably slow to
+load. The `lite` build weighs **7 MB** and, per its authors, is still far stronger
+than any human. We take `stockfish-18-lite.js` (multi-threaded) as the primary
+variant and `stockfish-18-lite-single.js` as the fallback.
 
-NNUE-сеть вшита внутрь `.wasm`; отдельного файла сети не существует. Оба файла
-(`.js` и `.wasm`) кладём рядом в `public/stockfish/` — Emscripten ищет `.wasm`
-относительно URL скрипта.
+The NNUE network is baked into the `.wasm`; there is no separate network file.
+Both files (`.js` and `.wasm`) go side by side into `public/stockfish/` —
+Emscripten looks for the `.wasm` relative to the script's URL.
 
-**SharedArrayBuffer.** Многопоточная сборка требует заголовков
-`Cross-Origin-Opener-Policy: same-origin` и
-`Cross-Origin-Embedder-Policy: require-corp`. Их нужно выставить в дев-сервере
-Vite. Однопоточная сборка работает без них, но не умеет
-`setoption name Threads`. Если `crossOriginIsolated === false`, приложение
-загружает однопоточный фолбэк и **явно сообщает об этом** в интерфейсе, а не
-работает тихо и медленно.
+**SharedArrayBuffer.** The multi-threaded build requires the headers
+`Cross-Origin-Opener-Policy: same-origin` and
+`Cross-Origin-Embedder-Policy: require-corp`. They must be set on the Vite dev
+server. The single-threaded build works without them but cannot honour
+`setoption name Threads`. If `crossOriginIsolated === false`, the app loads the
+single-threaded fallback and **says so explicitly** in the UI rather than running
+quietly and slowly.
 
-**Движок в Web Worker.** Анализ на глубине 22 в главном потоке заморозит
-интерфейс. Файл `stockfish-18-lite.js` спроектирован как worker-скрипт: он сам
-ставит `listener: (line) => postMessage(line)`. То есть
-`new Worker('/stockfish/stockfish-18-lite.js')` и обмен строками через
-`postMessage` / `onmessage` — это весь протокол.
+**The engine in a Web Worker.** Analysis at depth 22 on the main thread would
+freeze the UI. `stockfish-18-lite.js` is designed as a worker script: it sets
+`listener: (line) => postMessage(line)` itself. So
+`new Worker('/stockfish/stockfish-18-lite.js')` plus string exchange over
+`postMessage` / `onmessage` is the entire protocol.
 
-**В Node (для тестов)** тот же пакет грузится иначе: `require('stockfish')`
-возвращает `initEngine(flavor)`, отдающий промис с объектом, у которого есть
-`sendCommand(cmd)` и присваиваемое поле `listener`. Проверено: тест «мат в один»
-проходит под vitest за 765 мс. Пакет не имеет типов — нужен `declare module`.
+**In Node (for tests)** the same package loads differently: `require('stockfish')`
+returns `initEngine(flavor)`, which yields a promise for an object carrying
+`sendCommand(cmd)` and an assignable `listener` field. Verified: the mate-in-one
+test passes under vitest in 765 ms. The package ships no types — a `declare module`
+is needed.
 
-**Лицензия.** Stockfish распространяется под GPL-3.0. Это делает GPL-3.0
-обязательной для всего приложения. В репозитории уже лежит GPLv3 — менять ничего
-не нужно, но добавлять несовместимые по лицензии зависимости нельзя.
+**License.** Stockfish is distributed under GPL-3.0. That makes GPL-3.0 mandatory
+for the whole application. The repository already carries GPLv3, so nothing needs
+to change, but license-incompatible dependencies must not be added.
 
-## Архитектура ядра
+## Core architecture
 
-Три модуля с жёсткими границами, каждый понимается и тестируется отдельно.
+Three modules with hard boundaries, each understood and tested on its own.
 
 ### `engine/`
 
-Единственное место, знающее про UCI и WASM. Наружу выставляет типизированный
-интерфейс, а не текстовый протокол:
+The only place that knows about UCI and WASM. It exposes a typed interface
+outward, not a text protocol:
 
 ```ts
 analyze(fen: string, opts: { depth: number; multiPV: number; chess960: boolean })
@@ -95,147 +96,152 @@ type EvalUpdate = {
 }
 ```
 
-Внутри: Web Worker, парсер строк `info ...`, очередь команд. Гарантирует, что
-новый `analyze` корректно прерывает предыдущий — посылает `stop` и дожидается
-`bestmove`, иначе движок отвечает на старую позицию. React здесь отсутствует.
+Inside: a Web Worker, a parser for `info ...` lines, a command queue. It
+guarantees that a new `analyze` correctly interrupts the previous one — it sends
+`stop` and waits for `bestmove`, otherwise the engine answers about the old
+position. React is absent here.
 
-Тестируется в Node без браузера.
+Tested in Node without a browser.
 
 ### `game/`
 
-Обёртка над `chess.js`. Знает про позицию, историю ходов, легальность, PGN/FEN,
-Chess960. Не знает ни про движок, ни про DOM. Чистые функции над состоянием.
+A wrapper over `chess.js`. It knows about the position, move history, legality,
+PGN/FEN, Chess960. It knows about neither the engine nor the DOM. Pure functions
+over state.
 
 ### `ui/`
 
-React-компоненты. `<Board>` оборачивает `chessground` — библиотека императивная,
-ей нужен `useEffect` и ref, а не перерисовка. `<EvalBar>`, `<LineList>`.
-Компоненты получают данные пропсами и ничего не вычисляют сами.
+React components. `<Board>` wraps `chessground` — an imperative library that
+wants a `useEffect` and a ref, not a re-render. `<EvalBar>`, `<LineList>`.
+Components receive data through props and compute nothing themselves.
 
-### Мост: `useAnalysis(fen, options)`
+### The bridge: `useAnalysis(fen, options)`
 
-Единственная точка, где движок встречается с React. Подписывается на поток из
-`engine/`, троттлит апдейты до ~10 раз в секунду (на глубине 22 движок сыплет
-сотнями строк, каждая — потенциальный ре-рендер), отдаёт компонентам последний
-снимок.
+The single point where the engine meets React. It subscribes to the stream from
+`engine/`, throttles updates to ~10 per second (at depth 22 the engine emits
+hundreds of lines, each a potential re-render) and hands components the latest
+snapshot.
 
-**Инвариант:** eval-бар и стрелки читают из одного и того же `EvalUpdate`.
-Ситуация, когда бар показывает оценку одной глубины, а стрелка — линию другой,
-невозможна по построению.
+**Invariant:** the eval bar and the arrows read from the same `EvalUpdate`. A
+state where the bar shows one depth's score and an arrow shows another depth's
+line is impossible by construction.
 
-## Страница анализатора
+## The analyzer page
 
-Три зоны: доска слева, eval-бар вплотную к ней, панель анализа справа.
+Three zones: the board on the left, the eval bar flush against it, the analysis
+panel on the right.
 
-**Поток данных однонаправленный.** Источник истины — объект партии из `game/`.
-Из него выводится FEN. FEN уходит в `useAnalysis`, оттуда возвращаются линии.
-Обратно в состояние партии не пишет ничего, кроме действий пользователя.
+**Data flows one way.** The source of truth is the game object from `game/`. The
+FEN is derived from it. The FEN goes into `useAnalysis`, and lines come back.
+Nothing writes back into game state except user actions.
 
-**Ввод позиции** — четыре способа: перетаскивание фигуры, вставка FEN, вставка
-PGN, ручная расстановка в редакторе. Все сводятся к одной операции «заменить
-состояние партии». Ход по доске отличается только валидацией легальности.
+**Entering a position** — four ways: dragging a piece, pasting a FEN, pasting a
+PGN, arranging pieces by hand in the editor. All reduce to one operation,
+"replace the game state". A move on the board differs only by its legality check.
 
-**Панель анализа** показывает числовую оценку (сантипешки или «мат в N»),
-глубину и список из N лучших вариантов (MultiPV, по умолчанию 3). Каждый вариант
-— кликабельная цепочка ходов; клик проматывает доску на эту позицию, не разрушая
-основную партию. Это отдельное состояние просмотра, а не изменение партии.
+**The analysis panel** shows a numeric score (centipawns or "mate in N"), the
+depth, and a list of the N best lines (MultiPV, 3 by default). Each line is a
+clickable move chain; clicking scrolls the board to that position without
+destroying the main game. This is a separate preview state, not a change to the
+game.
 
-**Стрелки.** Первый вариант — зелёная стрелка, второй и третий бледнее.
-`<Board>` получает готовый список стрелок пропсом и не думает, откуда он.
+**Arrows.** The first line gets a green arrow; the second and third are paler.
+`<Board>` receives a ready list of arrows as a prop and does not wonder where it
+came from.
 
-**Смена позиции.** Пользователь двигает фигуру → `game/` валидирует и отдаёт
-новый FEN → `useAnalysis` вызывает `stop()`, дожидается `bestmove`, запускает
-новый анализ. В промежутке интерфейс показывает предыдущую оценку приглушённой,
-а не пустоту — иначе бар мигает на каждом ходу.
+**Changing the position.** The user moves a piece → `game/` validates and yields
+a new FEN → `useAnalysis` calls `stop()`, waits for `bestmove`, starts a new
+analysis. In between, the UI dims the previous score rather than showing nothing —
+otherwise the bar blinks on every move.
 
-**Настройки** (глубина анализа, число вариантов MultiPV) живут в одном месте и
-сохраняются в `localStorage`. Ограничение по времени на ход относится к игре с
-компьютером и появится в под-проекте 2.
+**Settings** (analysis depth, MultiPV count) live in one place and persist to
+`localStorage`. A per-move time limit belongs to play against the computer and
+arrives in sub-project 2.
 
-## Обработка ошибок
+## Error handling
 
-- Невалидный FEN при вставке: ошибка под полем, состояние не трогаем.
-- Невалидный или частично разобранный PGN: импортируем разобранное, предупреждаем.
-- Падение воркера Stockfish: перезапускаем воркер, повторяем последний запрос
-  один раз, дальше показываем сообщение.
-- `SharedArrayBuffer` недоступен: явное предупреждение в интерфейсе.
+- Invalid FEN on paste: an error under the field; state untouched.
+- Invalid or partially parsed PGN: import what parsed, warn about the rest.
+- Stockfish worker crash: restart the worker, retry the last request once, then
+  show a message.
+- `SharedArrayBuffer` unavailable: an explicit warning in the UI.
 
-## Тестирование
+## Testing
 
-- Юнит-тесты на парсер UCI-строк — самая скучная и самая ломкая часть.
-- Юнит-тесты на `game/`.
-- Интеграционный тест: позиция с матом в два, первый вариант движка — верный ход.
-- Компонентный тест на `<EvalBar>`: легко ошибиться со знаком оценки для чёрных.
+- Unit tests for the UCI line parser — the dullest and most brittle part.
+- Unit tests for `game/`.
+- Integration test: a mate-in-two position; the engine's first line is the right move.
+- Component test for `<EvalBar>`: the score's sign for black is easy to get wrong.
 
-## Структура файлов
+## File layout
 
 ```
 src/
   engine/
-    uci.ts             парсер строк info/bestmove — чистая функция
-    transport.ts       интерфейс EngineTransport + реализация на Worker
-    transport.node.ts  реализация на пакете stockfish, только для тестов
-    engine.ts          публичный интерфейс analyze/stop
+    uci.ts             parser for info/bestmove lines — a pure function
+    transport.ts       the EngineTransport interface + a Worker implementation
+    transport.node.ts  implementation over the stockfish package, tests only
+    engine.ts          public analyze/stop interface
     uci.test.ts
     engine.test.ts
     stockfish.d.ts     declare module 'stockfish'
   game/
-    game.ts            обёртка над chess.js
-    pgn.ts             импорт/экспорт
+    game.ts            wrapper over chess.js
+    pgn.ts             import/export
     game.test.ts
   ui/
-    Board.tsx          обёртка над chessground
+    Board.tsx          wrapper over chessground
     EvalBar.tsx
     LineList.tsx
     FenInput.tsx
   hooks/
-    useAnalysis.ts     мост движок → React
+    useAnalysis.ts     the engine → React bridge
     useSettings.ts     localStorage
   pages/
     Analyzer.tsx
   main.tsx
 public/
-  stockfish/           stockfish-18-lite.js + .wasm + single-фолбэк
+  stockfish/           stockfish-18-lite.js + .wasm + the single-threaded fallback
 ```
 
-`EngineTransport` — это шов, который позволяет `engine.ts` работать и в браузере
-(Worker), и в тестах (Node), не зная разницы. Без него шаг «движок работает до
-всякого UI» невыполним.
+`EngineTransport` is the seam that lets `engine.ts` run both in the browser
+(Worker) and in tests (Node) without knowing the difference. Without it, the step
+"the engine works before any UI exists" is impossible.
 
-Если `Analyzer.tsx` начнёт тянуть на несколько сотен строк — выделять панель
-анализа в отдельный компонент.
+If `Analyzer.tsx` starts running to several hundred lines, split the analysis
+panel into its own component.
 
-## Порядок сборки
+## Build order
 
-Снизу вверх, каждый шаг проверяется до перехода к следующему.
+Bottom-up; each step is verified before moving to the next.
 
-1. Vite + React + TS, заголовки COOP/COEP в дев-сервере.
-   Проверка: в консоли `typeof SharedArrayBuffer === 'function'`.
-2. `engine/` целиком, с тестами, без UI.
-   Проверка: скрипт в Node скармливает FEN с матом в один, печатает верный ход.
-3. `game/` с тестами.
-4. `<Board>` со стартовой позицией и перетаскиванием. Без движка.
-5. `useAnalysis` + `<EvalBar>` + `<LineList>` — первое соединение всех частей,
-   на экране появляется живая оценка.
-6. Стрелки, ввод FEN/PGN, настройки, редактор позиции.
-7. Роутер и заглушки остальных четырёх страниц.
+1. Vite + React + TS, COOP/COEP headers on the dev server.
+   Check: `typeof SharedArrayBuffer === 'function'` in the console.
+2. All of `engine/`, with tests, without UI.
+   Check: a Node script feeds it a mate-in-one FEN and prints the right move.
+3. `game/` with tests.
+4. `<Board>` with the starting position and dragging. No engine.
+5. `useAnalysis` + `<EvalBar>` + `<LineList>` — the first time all the parts meet;
+   a live evaluation appears on screen.
+6. Arrows, FEN/PGN input, settings, the position editor.
+7. Router and stubs for the other four pages.
 
-Шаг 2 — самый рискованный. Если движок работает в изоляции, остальное это
-обычный фронтенд. Поэтому он идёт до всякого UI.
+Step 2 is the riskiest. If the engine works in isolation, the rest is ordinary
+frontend. That is why it comes before any UI.
 
-## Декомпозиция на под-проекты
+## Breakdown into sub-projects
 
-Полный клон не помещается в один спек. Настоящий документ покрывает **ядро и
-под-проект 1**. Остальные получат свои спеки и планы:
+A full clone does not fit into one spec. This document covers **the core and
+sub-project 1**. The rest will get their own specs and plans:
 
-1. **Ядро + анализатор** (этот спек). Best Move Finder — тот же анализатор с
-   урезанным интерфейсом, входит сюда же.
-2. **Игра с компьютером + Chess960.** Добавляют игровой цикл и уровни силы
-   движка. Chess960 — флаг `UCI_Chess960` и другая начальная расстановка,
-   отдельной страницы почти не требует.
-3. **Импорт и разбор партии.** Lichess/Chess.com API, пошаговый проход,
-   классификация ходов по дельте оценки (зевок / ошибка / неточность).
-4. **AI-чат.** Абстракция над LLM. Решение Ollama vs Claude API отложено; слой
-   проектируется так, чтобы выбор не потребовал переписывания.
+1. **Core + analyzer** (this spec). The Best Move Finder is the same analyzer with
+   a trimmed interface and belongs here too.
+2. **Play against the computer + Chess960.** These add a game loop and engine
+   strength levels. Chess960 is the `UCI_Chess960` flag and a different starting
+   arrangement; it barely needs a page of its own.
+3. **Game import and review.** Lichess/Chess.com APIs, step-by-step walkthrough,
+   move classification by evaluation delta (blunder / mistake / inaccuracy).
+4. **AI chat.** An abstraction over an LLM. The Ollama vs Claude API decision is
+   deferred; the layer is designed so that the choice needs no rewrite.
 
-Под-проект 1 даёт работающий продукт сам по себе.
+Sub-project 1 yields a working product on its own.
