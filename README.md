@@ -43,8 +43,12 @@ below WCAG AA on either the page background or a card surface. The `decor`
 token (`#5B6184`) is deliberately below that threshold and may never be used
 for text; a test guards that too.
 
-The board's size is the CSS variable `--board-size`. The eval bar takes its
-height from the same variable, so the two cannot drift apart.
+The page is centred in a `max-w-[1600px]` container. Above 1280px the analyzer
+is a two-column grid; below it the columns stack, centred.
+
+The board sizes itself from the width of its column, capped by `--board-max`
+(`min(80vh, 640px)`). The eval bar stretches to the row, so the two cannot
+drift apart — the page padding never enters the arithmetic.
 
 ## License
 
