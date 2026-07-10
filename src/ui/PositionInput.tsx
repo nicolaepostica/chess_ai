@@ -3,6 +3,11 @@ import { useState } from 'react'
 import { createGame, isValidFen } from '../game/game'
 import { loadPgn } from '../game/pgn'
 
+const FIELD =
+  'w-full rounded-lg border border-border bg-black/35 px-2.5 py-2 font-mono text-xs text-fg placeholder:text-fg-muted'
+const BUTTON =
+  'rounded-lg border border-border bg-white/3 px-3.5 py-2 text-[13px] text-fg-secondary hover:text-fg'
+
 export type PositionInputProps = {
   onLoad: (game: Chess) => void
 }
@@ -24,7 +29,7 @@ export function PositionInput({ onLoad }: PositionInputProps) {
   const submitPgn = () => {
     const result = loadPgn(pgn.trim())
     if (!result.ok) {
-      setError(`Failed to parse PGN: ${result.error}`)
+      setError(`Could not parse PGN: ${result.error}`)
       return
     }
     setError(null)
@@ -32,20 +37,34 @@ export function PositionInput({ onLoad }: PositionInputProps) {
   }
 
   return (
-    <section className="position-input">
-      <label htmlFor="fen-input">FEN</label>
-      <input id="fen-input" value={fen} onChange={(event) => setFen(event.target.value)} />
-      <button type="button" onClick={submitFen}>
+    <section className="position-input flex flex-col gap-2">
+      <label htmlFor="fen-input" className="text-[13px] text-fg-secondary">
+        FEN
+      </label>
+      <input id="fen-input" className={FIELD} value={fen} onChange={(e) => setFen(e.target.value)} />
+      <button type="button" className={`${BUTTON} self-start`} onClick={submitFen}>
         Load FEN
       </button>
 
-      <label htmlFor="pgn-input">PGN</label>
-      <textarea id="pgn-input" rows={4} value={pgn} onChange={(event) => setPgn(event.target.value)} />
-      <button type="button" onClick={submitPgn}>
+      <label htmlFor="pgn-input" className="mt-2 text-[13px] text-fg-secondary">
+        PGN
+      </label>
+      <textarea
+        id="pgn-input"
+        rows={3}
+        className={FIELD}
+        value={pgn}
+        onChange={(e) => setPgn(e.target.value)}
+      />
+      <button type="button" className={`${BUTTON} self-start`} onClick={submitPgn}>
         Load PGN
       </button>
 
-      {error && <p role="alert">{error}</p>}
+      {error && (
+        <p role="alert" className="text-[13px] text-accent-alt">
+          {error}
+        </p>
+      )}
     </section>
   )
 }
