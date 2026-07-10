@@ -65,8 +65,14 @@ export function useAnalysis(fen: string, options: AnalyzeOptions): AnalysisState
       setStale(false)
     }
 
+    const stopFlushing = () => {
+      if (flushTimer) {
+        clearInterval(flushTimer)
+        flushTimer = null
+      }
+    }
+
     const run = async () => {
-      flushTimer = setInterval(flush, THROTTLE_MS)
       try {
         for await (const update of engine.analyze(fen, options)) {
           if (cancelled) break
@@ -76,15 +82,22 @@ export function useAnalysis(fen: string, options: AnalyzeOptions): AnalysisState
           })
         }
       } finally {
-        if (flushTimer) clearInterval(flushTimer)
+        stopFlushing()
         if (!cancelled) flush()
       }
     }
+
+    // The timer belongs to the effect, not to the generator: a terminated worker
+    // can leave the generator suspended forever, and its finally would never run.
+    flushTimer = setInterval(() => {
+      if (!cancelled) flush()
+    }, THROTTLE_MS)
 
     void run()
 
     return () => {
       cancelled = true
+      stopFlushing()
       engine.stop()
     }
   }, [fen, options.depth, options.multiPV, options.chess960, engineGeneration])
